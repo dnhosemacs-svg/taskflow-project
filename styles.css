@@ -101,7 +101,7 @@ h3 {
 
 /*Organización de la página*/
 
-.main {
+main {
     display: flex;
 }
 
@@ -130,19 +130,20 @@ h3 {
 }
 
 .series {
-    display: flex;
+    width: 300px;
     flex-direction: column;
     flex-flow: column wrap;
 }
 
 .peliculas {
-    display: flex;
+    width: 300px;
     flex-direction: column;
     flex-flow: column wrap;
 }
 
 /*Media query para adaptar la barra a pantallas pequeñas*/
 @media (max-width: 768px) { 
+    
     .lista { 
         flex-direction: column;
         display: flex;
