@@ -101,9 +101,8 @@ h3 {
 
 /*Organización de la página*/
 
-.layout {
+.main {
     display: flex;
-    align-items: flex-start; /* Alinea todo arriba */
 }
 
 /*Barra lateral*/
