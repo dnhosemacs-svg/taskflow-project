@@ -67,7 +67,6 @@ h3 {
     justify-content: space-between;  
     align-items: center; 
     padding: var(--espacio-m); 
-    border-bottom: 1px solid #ddd;
 }
 
 .task-title {
