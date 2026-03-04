@@ -11,20 +11,24 @@
         <!--Hacer clase header principal-->
         <h1>NextUp</h1>
     </header>
+    <section class="position">
+        <h2>Barra de búsqueda</h2>
+        <input type="text" id="search" placeholder="Buscar">
 
-    <input type="text" id="search" placeholder="Buscar">
+        <h2>Añadir tarea</h2>
+        <form id="formulario">
+            <input 
+                type="text" 
+                id="entrada" 
+                placeholder="Nueva tarea" 
+                required
+            >
+            <button type="submit">Añadir</button>
+        </form>
 
-    <form id="formulario">
-        <input 
-            type="text" 
-            id="entrada" 
-            placeholder="Nueva tarea" 
-            required
-        >
-        <button type="submit">Añadir</button>
-    </form>
-
-<ul id="elemento"></ul>
+        <h2>Tareas pendientes</h2>
+        <ul id="elemento"></ul>
+    </section>
 
     <script src="app.js"></script> 
 </body>
