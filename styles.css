@@ -150,12 +150,18 @@ main {
 }
 
 .series {
+    background-color: rgba(130, 92, 26, 0.698);
+    border: 5px solid rgba(130, 92, 26, 0.698);
+    border-radius: 15px;
     width: 400px;
     flex-direction: column;
     flex-flow: column wrap;
 }
 
 .peliculas {
+    background-color: rgba(130, 92, 26, 0.698);
+    border: 5px solid rgba(130, 92, 26, 0.698);
+    border-radius: 15px;
     width: 400px;
     flex-direction: column;
     flex-flow: column wrap;
@@ -167,6 +173,7 @@ main {
     main {
         display: flex;
         flex-direction: column;
+        gap: 20px; 
     }
 
     .lista { 
@@ -186,5 +193,6 @@ main {
 
     .contenedor { 
         flex-direction: column;
+        gap: 40px; 
     }
 }
