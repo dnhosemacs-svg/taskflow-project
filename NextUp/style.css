@@ -1,0 +1,46 @@
+:root {
+    /*Colores*/
+    --color-primario: #FCB861;
+    --color-secundario: #C5620B;
+    --color-fondo: #3c2b21;
+    --color-texto: #b7bbbf;
+
+    /*Tipografías*/
+    --fuente-principal: 'Arial', sans-serif;
+    --fuente-titulos: 'Georgia', serif;
+
+    /*Espaciados*/
+    --espacio-pequeño: 8px;
+    --espacio-medio: 16px;
+    --espacio-grande: 32px;
+}
+
+/*Estilos de la página*/
+body {
+    background-image: url(fondo.jpg);
+    color: var(--color-texto);
+    font-family: var(--fuente-principal);
+    padding: var(--espacio-medio);
+    margin:0 ;
+}
+
+h1 {
+    color: var(--color-primario);
+    font-family: var(--fuente-titulos);
+    margin-bottom: var(--espacio-grande);
+    font-size: 60px;
+    display: flex;
+    justify-content: center;
+}
+
+h2 {
+    color: var(--color-primario);
+    font-family: var(--fuente-titulos);
+    margin-bottom: var(--espacio-medio);
+}
+
+h3 {
+    color: var(--color-secundario);
+    font-family: var(--fuente-titulos);
+    margin-bottom: var(--espacio-medio);
+}
