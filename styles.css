@@ -1,9 +1,9 @@
 :root {
     /*Colores*/
-    --color-primario: #4a90e2;
-    --color-secundario: #f5a623;
-    --color-fondo: #ffffff;
-    --color-texto: #333333;
+    --color-primario: #FCB861;
+    --color-secundario: #C5620B;
+    --color-fondo: #3c2b21;
+    --color-texto: #6F7781;
 
     /*Tipografías*/
     --fuente-principal: 'Arial', sans-serif;
@@ -123,6 +123,7 @@ main {
 }
 
 .contenedor {
+    width: 800px;
     display: flex;
     flex-direction: row;
     flex-flow: row wrap;
