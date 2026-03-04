@@ -16,14 +16,16 @@ form.addEventListener('submit', function(event) {
 searchInput.addEventListener('input', filterTasks); // Escuchar entrada de búsqueda
 
 taskList.addEventListener('click', function(event) {
-  if (event.target.classList.contains('delete-btn')) {
-    const li = event.target.parentElement; // el <li> que contiene el botón
-    const text = li.firstChild.textContent; // texto de la tarea
-    tasks = tasks.filter(task => task !== text); // elimina la tarea del array
-    saveTasks(); // guarda los cambios en memoria local
-    li.remove(); // elimina la tarea del DOM
+  const deleteBtn = event.target.closest('.delete-btn');
+  if (deleteBtn) {
+    const li = deleteBtn.parentElement;
+    const text = li.firstChild.textContent;
+    tasks = tasks.filter(task => task !== text);
+    saveTasks();
+    li.remove();
   }
 });
+
 
 searchInput.addEventListener('input', filterTasks);
 
@@ -39,9 +41,16 @@ function addTask() { // Crear tareas mediante inputg de formulario
 
   // Crear botón de eliminar
   const deleteBtn = document.createElement('button');
-  deleteBtn.textContent = "X";
   deleteBtn.classList.add('delete-btn');
-  
+
+  const img = document.createElement('img');
+  img.src = 'Imagenes/boton.png';
+  img.alt = 'Eliminar';
+  img.width = 20; // ajusta tamaño
+
+  deleteBtn.appendChild(img);
+
+
   li.appendChild(deleteBtn); // Añadir el botón al li
   taskList.appendChild(li); // Añadir el li a la lista
   tasks.push(text); // Añadir al array
@@ -49,17 +58,24 @@ function addTask() { // Crear tareas mediante inputg de formulario
   input.value = ""; // Limpiar input
 }
 
-function createTaskElement(text) { //Gerera un li desde el texto de la memória
+function createTaskElement(text) {
   const li = document.createElement('li');
   li.textContent = text;
 
   const deleteBtn = document.createElement('button');
-  deleteBtn.textContent = "X";
   deleteBtn.classList.add('delete-btn');
+
+  const img = document.createElement('img');
+  img.src = 'Imagenes/boton.png'; // misma ruta que en addTask()
+  img.alt = 'Eliminar';
+  img.width = 20;
+
+  deleteBtn.appendChild(img);
 
   li.appendChild(deleteBtn);
   taskList.appendChild(li);
 }
+
 
 function saveTasks() { // Guardar datos en memoria local
     localStorage.setItem('tasks', JSON.stringify(tasks)); 
