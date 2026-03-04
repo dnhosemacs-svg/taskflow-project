@@ -3,7 +3,7 @@
     --color-primario: #FCB861;
     --color-secundario: #C5620B;
     --color-fondo: #3c2b21;
-    --color-texto: #6F7781;
+    --color-texto: #b7bbbf;
 
     /*Tipografías*/
     --fuente-principal: 'Arial', sans-serif;
@@ -17,7 +17,7 @@
 
 /*Estilos de la página*/
 body {
-    background-color: var(--color-fondo);
+    background-image: url(fondo.jpg);
     color: var(--color-texto);
     font-family: var(--fuente-principal);
     padding: var(--espacio-medio);
