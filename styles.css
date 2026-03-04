@@ -122,8 +122,17 @@ main {
     flex: 1; 
 }
 
+.pie-pag {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  padding: 15px;
+}
+
 .contenedor {
-    width: 800px;
+    width: 1000px;
     display: flex;
     flex-direction: row;
     flex-flow: row wrap;
