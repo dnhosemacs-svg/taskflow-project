@@ -144,6 +144,11 @@ main {
 /*Media query para adaptar la barra a pantallas pequeñas*/
 @media (max-width: 768px) { 
     
+    main {
+        display: flex;
+        flex-direction: column;
+    }
+
     .lista { 
         flex-direction: column;
         display: flex;
