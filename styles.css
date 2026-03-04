@@ -91,22 +91,20 @@ h3 {
 
 /*Colores según prioridad*/
 .task-status.saw { 
-    background-color: 
-    var(--color-alta); 
+    background-color: var(--color-alta); 
     color: #f31800; 
 } 
 
 .task-status.to-do { 
-    background-color: 
-    var(--color-media); 
+    background-color: var(--color-media); 
     color: #decf00; 
 } 
 
 .task-status.saved { 
-    background-color: 
-    var(--color-baja); 
+    background-color: var(--color-baja); 
     color: #3cff00; 
 }
+
 
 /*Organización de la página*/
 
