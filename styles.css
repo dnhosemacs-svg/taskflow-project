@@ -45,6 +45,16 @@ h3 {
     margin-bottom: var(--espacio-medio);
 }
 
+.presentacion{
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    padding: var(--espacio-medio);
+    font-family: var(--fuente-titulos);
+    font-size: 30px;
+}
+
 /*Estilo de la lista*/
 .task-list {
     list-style: none; 
@@ -140,13 +150,13 @@ main {
 }
 
 .series {
-    width: 300px;
+    width: 400px;
     flex-direction: column;
     flex-flow: column wrap;
 }
 
 .peliculas {
-    width: 300px;
+    width: 400px;
     flex-direction: column;
     flex-flow: column wrap;
 }
