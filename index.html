@@ -79,7 +79,33 @@
                                 </li>
                             </ul>
                     </aside>
-                    
+
+                    <script>
+                        document.querySelectorAll('.task-item').forEach(item => {
+                            item.addEventListener('click', () => {
+                                const states = ["saw", "to-do", "saved"];
+                                const labels = {
+                                    "saw": "Visto",
+                                    "to-do": "Por ver",
+                                    "saved": "Guardado"
+                                };
+
+                                let current = item.getAttribute("data-status");
+                                let next = states[(states.indexOf(current) + 1) % states.length];
+
+                                // Cambiar atributo
+                                item.setAttribute("data-status", next);
+
+                                // Cambiar texto
+                                const statusSpan = item.querySelector(".task-status");
+                                statusSpan.textContent = labels[next];
+
+                                // Cambiar clases
+                                statusSpan.classList.remove("saw", "to-do", "saved");
+                                statusSpan.classList.add(next);
+                            });
+                        });
+                    </script>
             </div>
         </section>
     </main>
