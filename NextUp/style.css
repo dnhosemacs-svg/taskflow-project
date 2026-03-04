@@ -1,9 +1,9 @@
 :root {
     /*Colores*/
-    --color-primario: #FCB861;
-    --color-secundario: #C5620B;
-    --color-fondo: #3c2b21;
-    --color-texto: #b7bbbf;
+    --color-primario: #1E88E5;
+    --color-secundario: #546E7A;
+    --color-fondo: #1565C0;
+    --color-texto: #0D47A1;
 
     /*Tipografías*/
     --fuente-principal: 'Arial', sans-serif;
@@ -17,7 +17,7 @@
 
 /*Estilos de la página*/
 body {
-    background-image: url(fondo.jpg);
+    background-color: #E3F2FD;
     color: var(--color-texto);
     font-family: var(--fuente-principal);
     padding: var(--espacio-medio);
@@ -39,8 +39,4 @@ h2 {
     margin-bottom: var(--espacio-medio);
 }
 
-h3 {
-    color: var(--color-secundario);
-    font-family: var(--fuente-titulos);
-    margin-bottom: var(--espacio-medio);
-}
+/* Estilo de la lista */
