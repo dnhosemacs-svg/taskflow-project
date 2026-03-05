@@ -20,7 +20,7 @@ taskList.addEventListener('click', function(event) {
   const deleteBtn = event.target.closest('.delete-btn');
   if (deleteBtn) {
     const li = deleteBtn.parentElement;
-    const text = li.firstChild.textContent;
+    const text = li.querySelector('span').textContent;
     tasks = tasks.filter(task => task !== text);
     saveTasks();
     li.remove();
@@ -32,48 +32,55 @@ searchInput.addEventListener('input', filterTasks);
 
 // Funciones
 
-function addTask() { // Crear tareas mediante inputg de formulario
+function addTask() {
   const text = input.value.trim();
   if (text === "") return; // evita tareas vacías
 
-  // Crear el elemento li
   const li = document.createElement('li');
-  li.textContent = text;
+  li.classList.add('task-item');
 
-  // Crear botón de eliminar
   const deleteBtn = document.createElement('button');
   deleteBtn.classList.add('delete-btn');
 
   const img = document.createElement('img');
   img.src = 'Imagenes/boton.png';
   img.alt = 'Eliminar';
-  img.width = (tamañoImg); // ajusta tamaño
+  img.width = tamañoImg;
 
   deleteBtn.appendChild(img);
 
+  const span = document.createElement('span');
+  span.textContent = text;
 
-  li.appendChild(deleteBtn); // Añadir el botón al li
-  taskList.appendChild(li); // Añadir el li a la lista
-  tasks.push(text); // Añadir al array
-  saveTasks(); //Guardar en memoria local
-  input.value = ""; // Limpiar input
+  li.appendChild(deleteBtn);
+  li.appendChild(span);
+
+  taskList.appendChild(li);
+  tasks.push(text);
+  saveTasks();
+  input.value = "";
 }
 
 function createTaskElement(text) {
   const li = document.createElement('li');
-  li.textContent = text;
+  li.classList.add('task-item');
 
   const deleteBtn = document.createElement('button');
   deleteBtn.classList.add('delete-btn');
 
   const img = document.createElement('img');
-  img.src = 'Imagenes/boton.png'; // misma ruta que en addTask()
+  img.src = 'Imagenes/boton.png';
   img.alt = 'Eliminar';
-  img.width = (tamañoImg);
+  img.width = tamañoImg;
 
   deleteBtn.appendChild(img);
 
+  const span = document.createElement('span');
+  span.textContent = text;
+
   li.appendChild(deleteBtn);
+  li.appendChild(span);
+
   taskList.appendChild(li);
 }
 

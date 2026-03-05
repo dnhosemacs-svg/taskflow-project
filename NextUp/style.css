@@ -50,10 +50,15 @@ h2 {
 
 /*Estilo de la lista*/
 
-li {
-  list-style: none;
-  background: none;
-  border: none;
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* separación entre botón y texto */
+  padding: 8px 0;
+}
+
+.task-item span {
+  flex: 1; /* el texto ocupa el espacio restante */
 }
 
 /*Icono en boton de añadir*/
