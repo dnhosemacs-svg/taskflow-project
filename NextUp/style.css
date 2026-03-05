@@ -64,8 +64,8 @@ h2 {
 /*Icono en boton de añadir*/
 
 button {
-  width: 40px;
-  height: 40px;
+  width: 30px;
+  height: auto;
   padding: 0;
   border: none;
   background: none;
@@ -92,4 +92,32 @@ button img {
   height: auto;
   display: block;
   border-radius: 14px;
+}
+
+/*posicion del boton añadir respecto del form*/
+
+.contenedorForm {
+    display: flex;
+    align-items: center;
+    gap: 10px; /*separación entre input y botón*/
+    margin-bottom: 20px;
+}
+
+/* Estilo general para inputs de texto */
+input[type="text"] {
+    width: 280px;
+    padding: 5px;
+    border: 2px solid var(--color-primario);
+    border-radius: 8px;
+    background-color: #ffffff;
+    color: var(--color-texto);
+    font-size: 16px;
+    outline: none;
+    transition: 0.2s ease;
+}
+
+/* Efecto al hacer clic o escribir */
+input[type="text"]:focus {
+    border-color: #0D47A1;
+    background-color: #E3F2FD;
 }

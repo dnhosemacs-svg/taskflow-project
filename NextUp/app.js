@@ -99,17 +99,17 @@ function loadTasks() { // Cargar tareas que esten en memoria al recargar
   }
 }
 
-function filterTasks() { // Recorrer todas las tareas y borrar las que coincidan
+function filterTasks() {
   const searchText = searchInput.value.toLowerCase();
   const items = taskList.getElementsByTagName('li');
 
   Array.from(items).forEach(li => {
-    const taskText = li.firstChild.textContent.toLowerCase();
+    const taskText = li.querySelector('span').textContent.toLowerCase();
 
     if (taskText.includes(searchText)) {
-      li.style.display = "block"; // mostrar
+      li.style.display = "block";
     } else {
-      li.style.display = "none"; // ocultar
+      li.style.display = "none";
     }
   });
 }
