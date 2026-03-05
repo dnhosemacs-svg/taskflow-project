@@ -1,7 +1,7 @@
 :root {
     /*Colores*/
     --color-primario: #1E88E5;
-    --color-secundario: #546E7A;
+    --color-secundario: #697981;
     --color-fondo: #1565C0;
     --color-texto: #0D47A1;
 
@@ -86,4 +86,5 @@ button img {
   width: 25px;   /* ajusta a tu gusto */
   height: auto;
   display: block;
+  border-radius: 14px;
 }
