@@ -5,6 +5,7 @@ const input = document.getElementById('entrada');
 const taskList = document.getElementById('elemento');
 const searchInput = document.getElementById('search');
 let tasks = []; // Lista gloval de tareas (Array)
+var tamañoImg = 30;
 
 // Eventos
 
@@ -46,7 +47,7 @@ function addTask() { // Crear tareas mediante inputg de formulario
   const img = document.createElement('img');
   img.src = 'Imagenes/boton.png';
   img.alt = 'Eliminar';
-  img.width = 20; // ajusta tamaño
+  img.width = (tamañoImg); // ajusta tamaño
 
   deleteBtn.appendChild(img);
 
@@ -68,7 +69,7 @@ function createTaskElement(text) {
   const img = document.createElement('img');
   img.src = 'Imagenes/boton.png'; // misma ruta que en addTask()
   img.alt = 'Eliminar';
-  img.width = 20;
+  img.width = (tamañoImg);
 
   deleteBtn.appendChild(img);
 
