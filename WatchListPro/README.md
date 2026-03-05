@@ -12,7 +12,7 @@ WatchList Pro es una aplicación web sencilla que permite organizar series y pel
 -Barra lateral con listas predefinidas: Vistos, Por ver y Guardados.
 -Diseño adaptable mediante CSS externo.
 
-## 📦 Tecnologías utilizadas
+## Tecnologías utilizadas
 - HTML5 para la estructura.
 - CSS3 para los estilos y el diseño.
 - JavaScript para el cambio de estado de cada serie o película.
