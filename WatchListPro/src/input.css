@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+/* Aquí defines tu tema personalizado */
+@theme {
+  /* 🎨 Colores */
+  --color-primario: #FCB861;
+  --color-secundario: #C5620B;
+  --color-fondo: #3c2b21;
+  --color-texto: #b7bbbf;
+
+  --color-alta: #f31800;
+  --color-media: #decf00;
+  --color-baja: #3cff00;
+
+  /* 🔤 Fuentes */
+  --font-principal: Arial, sans-serif;
+  --font-titulos: Georgia, serif;
+
+  /* 📏 Espaciados */
+  --spacing-s: 8px;
+  --spacing-m: 16px;
+  --spacing-g: 32px;
+}
