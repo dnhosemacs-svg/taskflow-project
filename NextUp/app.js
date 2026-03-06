@@ -1,20 +1,16 @@
-// Elementos del programa
-
 const form = document.getElementById('formulario');
 const input = document.getElementById('entrada');
 const taskList = document.getElementById('elemento');
 const searchInput = document.getElementById('search');
-let tasks = []; // Lista gloval de tareas (Array)
+let tasks = [];
 var tamañoImg = 30;
 
-// Eventos
-
 form.addEventListener('submit', function(event) {
-  event.preventDefault(); // Evita que recargue la página
+  event.preventDefault();
   addTask();
 });
 
-searchInput.addEventListener('input', filterTasks); // Escuchar entrada de búsqueda
+searchInput.addEventListener('input', filterTasks);
 
 taskList.addEventListener('click', function(event) {
   const deleteBtn = event.target.closest('.delete-btn');
@@ -27,30 +23,26 @@ taskList.addEventListener('click', function(event) {
   }
 });
 
-
-searchInput.addEventListener('input', filterTasks);
-
-// Funciones
-
 function addTask() {
   const text = input.value.trim();
-  if (text === "") return; // evita tareas vacías
+  if (text === "") return;
 
   const li = document.createElement('li');
-  li.classList.add('task-item');
+  li.classList.add('task-item', 'flex', 'items-center', 'gap-2', 'py-2');
 
   const deleteBtn = document.createElement('button');
-  deleteBtn.classList.add('delete-btn');
+  deleteBtn.classList.add('delete-btn', 'ml-2', 'bg-transparent', 'border-none', 'p-0', 'cursor-pointer');
 
   const img = document.createElement('img');
   img.src = 'Imagenes/boton.png';
   img.alt = 'Eliminar';
-  img.width = tamañoImg;
+  img.classList.add('w-6', 'h-6', 'block', 'rounded-full');
 
   deleteBtn.appendChild(img);
 
   const span = document.createElement('span');
   span.textContent = text;
+  span.classList.add('flex-1');
 
   li.appendChild(deleteBtn);
   li.appendChild(span);
@@ -63,20 +55,21 @@ function addTask() {
 
 function createTaskElement(text) {
   const li = document.createElement('li');
-  li.classList.add('task-item');
+  li.classList.add('task-item', 'flex', 'items-center', 'gap-2', 'py-2');
 
   const deleteBtn = document.createElement('button');
-  deleteBtn.classList.add('delete-btn');
+  deleteBtn.classList.add('delete-btn', 'ml-2', 'bg-transparent', 'border-none', 'p-0', 'cursor-pointer');
 
   const img = document.createElement('img');
   img.src = 'Imagenes/boton.png';
   img.alt = 'Eliminar';
-  img.width = tamañoImg;
+  img.classList.add('w-6', 'h-6', 'block', 'rounded-full');
 
   deleteBtn.appendChild(img);
 
   const span = document.createElement('span');
   span.textContent = text;
+  span.classList.add('flex-1');
 
   li.appendChild(deleteBtn);
   li.appendChild(span);
@@ -84,18 +77,15 @@ function createTaskElement(text) {
   taskList.appendChild(li);
 }
 
-
-function saveTasks() { // Guardar datos en memoria local
-    localStorage.setItem('tasks', JSON.stringify(tasks)); 
+function saveTasks() {
+  localStorage.setItem('tasks', JSON.stringify(tasks));
 }
 
-function loadTasks() { // Cargar tareas que esten en memoria al recargar
+function loadTasks() {
   const storedTasks = localStorage.getItem('tasks');
-
   if (storedTasks) {
     tasks = JSON.parse(storedTasks);
-    tasks.forEach(task => {createTaskElement(task);
-    });
+    tasks.forEach(task => createTaskElement(task));
   }
 }
 
@@ -105,13 +95,8 @@ function filterTasks() {
 
   Array.from(items).forEach(li => {
     const taskText = li.querySelector('span').textContent.toLowerCase();
-
-    if (taskText.includes(searchText)) {
-      li.style.display = "block";
-    } else {
-      li.style.display = "none";
-    }
+    li.style.display = taskText.includes(searchText) ? "flex" : "none";
   });
 }
 
-loadTasks(); // llamada de funciones al recargar la pagina
+loadTasks();

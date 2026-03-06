@@ -1,32 +1,52 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NextUp</title>
-    <link href="./output.css" rel="stylesheet">
-</head>
-<body>
-     <header>
-        <!--Hacer clase header principal-->
-        <h1>NextUp</h1>
-    </header>
-    <section class="position">
-        <h2>Barra de búsqueda</h2>
-        <input type="text" id="search" placeholder="Buscar">
 
-        <h2>Añadir tarea</h2>
-        <form id="formulario" class="contenedorForm">
-            <input type="text" id="entrada" placeholder="Nueva tarea" required>
-            <button type="submit">
-                <img src="Imagenes/BotonAñadir.png" alt="Añadir">
+    <!-- CSS generado por Tailwind -->
+    <link rel="stylesheet" href="style.css">
+
+    <title>NextUp</title>
+</head>
+
+<body class="bg-gray-100 text-texto">
+
+    <header class="bg-primario text-white py-4 text-center text-3xl font-bold shadow-md">
+        NextUp
+    </header>
+
+    <section class="max-w-md mx-auto mt-8 p-4 bg-white rounded-xl shadow">
+
+        <h2 class="text-xl font-semibold mb-2">Barra de búsqueda</h2>
+        <input 
+            type="text" 
+            id="search" 
+            placeholder="Buscar"
+            class="w-full px-3 py-2 border-2 border-primario rounded-lg bg-white text-texto text-base outline-none focus:border-blue-900 focus:bg-blue-100 transition mb-6"
+        >
+
+        <h2 class="text-xl font-semibold mb-2">Añadir tarea</h2>
+
+        <form id="formulario" class="flex items-center gap-2 mb-6">
+            <input 
+                type="text" 
+                id="entrada" 
+                placeholder="Nueva tarea" 
+                required
+                class="flex-1 px-3 py-2 border-2 border-primario rounded-lg bg-white text-texto text-base outline-none focus:border-blue-900 focus:bg-blue-100 transition"
+            >
+
+            <button type="submit" class="w-8 h-8 p-0 bg-transparent border-none">
+                <img src="Imagenes/BotonAñadir.png" alt="Añadir" class="w-full h-full object-contain">
             </button>
         </form>
 
-        <h2>Tareas pendientes</h2>
-        <ul id="elemento"></ul>
+        <h2 class="text-xl font-semibold mb-2">Tareas pendientes</h2>
+        <ul id="elemento" class="space-y-2"></ul>
+
     </section>
 
-    <script src="app.js"></script> 
+    <script src="app.js"></script>
 </body>
 </html>
