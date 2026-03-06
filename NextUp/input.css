@@ -1,3 +1,4 @@
+@import "tailwindcss/colors";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
