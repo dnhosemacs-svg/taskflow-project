@@ -1,4 +1,19 @@
-@import "tailwindcss/colors";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Tema personalizado */
+@theme {
+  /* 🎨 Colores */
+  --color-primario: #1E88E5;
+  --color-secundario: #697981;
+  --color-fondo: #1565C0;
+  --color-texto: #0D47A1;
+
+  /* 🔤 Fuentes */
+  --font-principal: Arial, sans-serif;
+  --font-titulos: Georgia, serif;
+
+  /* 📏 Espaciados */
+  --spacing-s: 8px;
+  --spacing-m: 16px;
+  --spacing-g: 32px;
+}
