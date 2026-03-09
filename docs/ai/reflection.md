@@ -1,0 +1,1 @@
+Documento donde redactaré mi propia reflexión sobre el uso de la IA.

@@ -1,0 +1,1 @@
+Documento para comparar ChatGPT con Claude en donde mostrare un prompt y a continuación mi comparación de las respuestas recibidad por ambas IA.
