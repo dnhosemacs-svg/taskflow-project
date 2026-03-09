@@ -11,3 +11,9 @@ Prompts para Claude mediante los cuales he descartado todas las posibles causas 
 -centrémonos en la causa 2, muestrame un ejemplo sencillo de como debo poner el .dark si empleo un script para aplicarlo al final del body
 -que diferencia hay con mi script si también activa la clase dark, mi script es: <!-- SCRIPT DARK MODE -->
 -en mi archivo input.css tengo: @import "tailwindcss"; @variant dark (&:where(.dark, .dark *));
+
+-Cuando intento ejecutar tailwind me arroja el siguiente error: (mensaje del shell).
+
+Observaciones: 
+
+A la hora de meter prompts es muy util mandar junto al prompt el trozo de codigo al que nos referimos para que la ia sepa exactamente que esta pasando.

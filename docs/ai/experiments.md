@@ -32,3 +32,13 @@ Después de comprobar todos los puntos ChatGPT ha propuesto una prueba para ver 
         TEST DARK MODE
     </div>
 A raiz de esta prueba determinamos que el problema es de copnfiguración.
+Mediante Claude he revisado la configuración y al ejecutar el comando npx tailwindcss -i ./input.css -o ./output.css --watch he visto que arrojaba el error de que el ejecutable de tailwind no esta en la carpeta .bin por lo que he procedidio a reinstalar completamente el CLI, priomer eliminando las dependencias y luegho volviendo a instalarlas y funciona perfectamente el modo oscuro.
+Comandos usados propuestos por Claude:
+<!--Desinstalar dependencias-->
+-Remove-Item node_modules -Recurse -Force
+-Remove-Item package-lock.json
+<!--Reinstalar node y Tailwind-->
+-npm install
+-npm install -D tailwindcss @tailwindcss/cli
+<!--Ejecutar Tailwind para que genere CSS-->
+-npx tailwindcss -i ./input.css -o ./output.css --watch
