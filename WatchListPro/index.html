@@ -3,118 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>WatchListPro</title>
+    <link rel="stylesheet" href="output.css">
 </head>
-<body>
-    <header>
-        <!--Hacer clase header principal-->
-        <h1>WatchList Pro</h1>
-        <p class="presentacion">La mejor manera de disfrutar del contenido es organizándolo.</p>
-    </header>
 
-    <main>
-        
-        <aside class="lista">
+<body class="bg-[url('fondo.jpg')] text-texto font-principal p-m m-0">
 
-            <div class="barra-lateral">
-                <!--Título de la barra lateral-->
-                <h2>Listas</h2>
-            </div>
+<header class="text-center mb-g">
+    <h1 class="text-primario font-titulos text-[60px] flex justify-center mb-g">
+        WatchList Pro
+    </h1>
+    <p class="font-titulos text-[30px] p-m w-full text-center">
+        La mejor manera de disfrutar del contenido es organizándolo.
+    </p>
+</header>
 
-            <div class="contenido-barra">
-                <!--Contenido principal de la barra-->
-                <ul>
-                    <li>Vistos</li>
-                    <li>Por ver</li>
-                    <li>Guardados</li>
+<main class="flex max-md:flex-col max-md:gap-5">
+
+    <!-- Barra lateral -->
+    <aside class="ml-[5px] flex flex-col w-[100px] shrink-0 max-md:w-full max-md:items-center">
+
+        <div class="w-[100px] bg-[#825327] p-m max-md:w-full">
+            <h2 class="text-primario font-titulos mb-m">Listas</h2>
+        </div>
+
+        <div class="flex-1 p-m">
+            <ul class="space-y-2">
+                <li>Vistos</li>
+                <li>Por ver</li>
+                <li>Guardados</li>
+            </ul>
+        </div>
+    </aside>
+
+    <!-- Contenido principal -->
+    <section class="flex-1">
+        <div class="w-[1000px] flex flex-wrap justify-around max-md:flex-col max-md:gap-10">
+
+            <!-- SERIES -->
+            <aside class="bg-[rgba(130,92,26,0.698)] border-[5px] border-[rgba(130,92,26,0.698)] rounded-[15px] w-[400px] p-m">
+                <h2 class="text-primario font-titulos mb-m">Series</h2>
+
+                <ul class="space-y-2">
+
+                    <li class="flex justify-between items-center p-m cursor-pointer" data-status="saw">
+                        <span class="flex-2 font-bold">Stranger thing</span>
+                        <span class="flex-1 text-center opacity-80">Sobrenatural</span>
+                        <span class="task-status saw flex-[0.5] px-s py-s rounded bg-alta text-[#f31800] text-center text-sm text-black">
+                            Visto
+                        </span>
+                    </li>
+
+                    <li class="flex justify-between items-center p-m cursor-pointer" data-status="to-do">
+                        <span class="flex-2 font-bold">Los Bridgerton</span>
+                        <span class="flex-1 text-center opacity-80">Romance</span>
+                        <span class="task-status to-do flex-[0.5] px-s py-s rounded bg-media text-[#decf00] text-center text-sm text-black">
+                            Por ver
+                        </span>
+                    </li>
+
+                    <li class="flex justify-between items-center p-m cursor-pointer" data-status="saved">
+                        <span class="flex-2 font-bold">Vinland saga</span>
+                        <span class="flex-1 text-center opacity-80">Acción</span>
+                        <span class="task-status saved flex-[0.5] px-s py-s rounded bg-baja text-[#3cff00] text-center text-sm text-black">
+                            Guardado
+                        </span>
+                    </li>
+
                 </ul>
-            </div>
-        </aside>
+            </aside>
 
-        <section>
-            <div class="contenedor">
+            <!-- PELÍCULAS -->
+            <aside class="bg-[rgba(130,92,26,0.698)] border-[5px] border-[rgba(130,92,26,0.698)] rounded-[15px] w-[400px] p-m">
+                <h2 class="text-primario font-titulos mb-m">Películas</h2>
 
-                    <aside class="series">
-                        <h2>Series</h2>
-                            <ul class="task-list">
-                                <li class="task-item">
-                                    <span class="task-title">Stranger thing</span>
-                                    <span class="task-category">Sobrenatural</span>
-                                    <span class="task-status saw">Visto</span>
-                                </li>
+                <ul class="space-y-2">
 
-                                <li class="task-item">
-                                    <span class="task-title">Los Bridgerton</span>
-                                    <span class="task-category">Romance</span>
-                                    <span class="task-status to-do">Por ver</span>
-                                </li>
+                    <li class="flex justify-between items-center p-m cursor-pointer" data-status="saw">
+                        <span class="flex-2 font-bold">La gran fuga</span>
+                        <span class="flex-1 text-center opacity-80">Acción</span>
+                        <span class="task-status saw flex-[0.5] px-s py-s rounded bg-alta text-[#f31800] text-center text-sm text-black">
+                            Visto
+                        </span>
+                    </li>
 
-                                <li class="task-item">
-                                    <span class="task-title">Vinland saga</span>
-                                    <span class="task-category">Acción</span>
-                                    <span class="task-status saved">Guardado</span>
-                                </li>
-                            </ul>
-                    </aside>
-                    <aside class="peliculas">    
-                        <h2>Películas</h2>
-                            <ul class="task-list">
-                                <li class="task-item">
-                                    <span class="task-title">La gran fuga</span>
-                                    <span class="task-category">Acción</span>
-                                    <span class="task-status saw">Visto</span>
-                                </li>
+                    <li class="flex justify-between items-center p-m cursor-pointer" data-status="to-do">
+                        <span class="flex-2 font-bold">The king</span>
+                        <span class="flex-1 text-center opacity-80">Bélico</span>
+                        <span class="task-status to-do flex-[0.5] px-s py-s rounded bg-media text-[#decf00] text-center text-sm text-black">
+                            Por ver
+                        </span>
+                    </li>
 
-                                <li class="task-item">
-                                    <span class="task-title">The king</span>
-                                    <span class="task-category">Bélico</span>
-                                    <span class="task-status to-do">Por ver</span>
-                                </li>
+                    <li class="flex justify-between items-center p-m cursor-pointer" data-status="saved">
+                        <span class="flex-2 font-bold">Minions</span>
+                        <span class="flex-1 text-center opacity-80">Infantil</span>
+                        <span class="task-status saved flex-[0.5] px-s py-s rounded bg-baja text-[#3cff00] text-center text-sm text-black">
+                            Guardado
+                        </span>
+                    </li>
 
-                                <li class="task-item">
-                                    <span class="task-title">Minions</span>
-                                    <span class="task-category">Infantil</span>
-                                    <span class="task-status saved">Guardado</span>
-                                </li>
-                            </ul>
-                    </aside>
+                </ul>
+            </aside>
 
-                    <script>
-                        document.querySelectorAll('.task-item').forEach(item => {
-                            item.addEventListener('click', () => {
-                                const states = ["saw", "to-do", "saved"];
-                                const labels = {
-                                    "saw": "Visto",
-                                    "to-do": "Por ver",
-                                    "saved": "Guardado"
-                                };
-
-                                let current = item.getAttribute("data-status");
-                                let next = states[(states.indexOf(current) + 1) % states.length];
-
-                                // Cambiar atributo
-                                item.setAttribute("data-status", next);
-
-                                // Cambiar texto
-                                const statusSpan = item.querySelector(".task-status");
-                                statusSpan.textContent = labels[next];
-
-                                // Cambiar clases
-                                statusSpan.classList.remove("saw", "to-do", "saved");
-                                statusSpan.classList.add(next);
-                            });
-                        });
-                    </script>
-            </div>
-        </section>
-    </main>
-    <section>
-
-        <footer class="pie-pag">
-            <h2>Publicidad</h2>
-            <p>Sección para alojar publicidad relevante al sitio web</p>
-        </footer>
-
+        </div>
     </section>
+</main>
+
+<footer class="fixed bottom-0 left-0 w-full text-center p-[15px] bg-transparent">
+    <h2 class="text-primario font-titulos">Publicidad</h2>
+    <p>Sección para alojar publicidad relevante al sitio web</p>
+</footer>
+
+<script>
+document.querySelectorAll('.task-item, li[data-status]').forEach(item => {
+    item.addEventListener('click', () => {
+        const states = ["saw", "to-do", "saved"];
+        const labels = {
+            "saw": "Visto",
+            "to-do": "Por ver",
+            "saved": "Guardado"
+        };
+
+        let current = item.getAttribute("data-status");
+        let next = states[(states.indexOf(current) + 1) % states.length];
+
+        item.setAttribute("data-status", next);
+
+        const statusSpan = item.querySelector(".task-status");
+        statusSpan.textContent = labels[next];
+
+        statusSpan.classList.remove("saw", "to-do", "saved");
+        statusSpan.classList.add(next);
+    });
+});
+</script>
+
 </body>
+</html>
