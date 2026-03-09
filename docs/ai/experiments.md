@@ -26,3 +26,9 @@ Causas posibles:
     En mi output.css existen las clases.dark
 -Estás usando Tailwind por CDN y falta la configuración [DESESTIMADA]
     Tengo tailwind v4 instalado en el proyecto y funciona para el aspecto de la web.
+
+Después de comprobar todos los puntos ChatGPT ha propuesto una prueba para ver de donde viene el problema.
+    <div class="bg-white dark:bg-black text-black dark:text-white p-10">
+        TEST DARK MODE
+    </div>
+A raiz de esta prueba determinamos que el problema es de copnfiguración.

@@ -30,6 +30,8 @@ variantes dark a causa de:
 
 5. Estás usando Tailwind por CDN y falta la configuración
 
+Propone una prueba rápida para ver donde está el problema y el problema es de configuración.
+
 ----------------------------------------------------------------
 
 Problema: El botón del modo oscuro no funciona.
