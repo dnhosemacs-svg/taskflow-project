@@ -1,3 +1,26 @@
 Aquí se expondrán alguynos problemas que intentaré resolver mediante IA.
 
 Primero se resolverán sin ayuda y luego se comparará mi solución con la solución que me arroje la IA.
+
+Problema1: El botón del modo oscuro no funciona.
+
+Prompt: Tengo una web compuesta por un html al que se le ha instalado tailwind v4, mediante tailwind y un pequeño script se ha añadido un botón para poner el dark mode, si mediante el inspector del navegador se comprueba que la clase dark se aplica bien en el html pero el aspecto de la web no cambia a que se puede deber.
+
+Causas posibles:
+
+-Las clases dark: deben estar presentes en el HTML [DESESTIMADA]
+    Clases puestas en cada elemento
+-Tailwind v4 usa @variant dark en lugar de darkMode: 'class' [DESESTIMADA]
+    En input.css está la línea: @variant dark (&:where(.dark, .dark *));
+-El selector de la clase .dark debe estar en el elemento raíz [DESESTIMADA]
+    Para seleccionar la clase dark se usa un script que añade "clase="dark"" a la línea: <html lang="es">
+-Conflicto con @layer o CSS personalizado que sobreescribe [DESESTIMADA]
+    El CSS usado en el HTML es output.css
+-Configuración incorrecta de darkMode en tailwind.config.js [DESESTIMADA]
+    darkMode: "class", //añadido en tailwind.config.js
+-Tailwind no detecta las clases dark: al compilar [COMPROBAR]
+
+-El botón solo cambia la clase pero no el CSS compilado [COMPROBAR]
+    
+-Estás usando Tailwind por CDN y falta la configuración [DESESTIMADA]
+    Tengo tailwind v4 instalado en el proyecto y funciona para el aspecto de la web.
