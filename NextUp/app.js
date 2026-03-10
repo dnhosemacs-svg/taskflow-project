@@ -149,7 +149,9 @@ function filterTasks() {
 
   Array.from(items).forEach(li => {
     const taskText = li.querySelector('span').textContent.toLowerCase();
-    li.style.display = taskText.includes(searchText) ? "flex" : "none";
+    const matches = taskText.includes(searchText);
+    li.classList.toggle('hidden', !matches);
+    li.style.display = matches ? 'flex' : 'none';
   });
 }
 

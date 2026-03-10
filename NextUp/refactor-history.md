@@ -31,3 +31,7 @@ Este archivo documenta, paso a paso, los cambios de refactorización que vamos r
   - `loadTasks()` migra automáticamente desde el formato antiguo de `localStorage` (array de strings) al nuevo (array de objetos).
   - En `tests/tests.js`, el helper `readStoredTasks()` se actualiza para devolver siempre un array de textos, independientemente del formato interno guardado.
 
+- **`app.js` + tests → filtro con clase y compatibilidad con `display`**
+  - `filterTasks()` ahora alterna la clase `hidden` y además actualiza explícitamente `style.display` (`flex`/`none`) para cada `<li>`, asegurando que funcione tanto con Tailwind como en el entorno mínimo de tests.
+  - En `tests/tests.js`, `visibleLiTexts()` usa `getComputedStyle(li).display` para determinar qué tareas están visibles, manteniendo los tests alineados con el comportamiento real.
+

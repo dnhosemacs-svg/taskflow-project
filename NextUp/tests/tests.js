@@ -45,7 +45,7 @@ function liTexts() {
 
 function visibleLiTexts() {
   return Array.from($('elemento').querySelectorAll('li'))
-    .filter((li) => li.style.display !== 'none')
+    .filter((li) => window.getComputedStyle(li).display !== 'none')
     .map((li) => li.querySelector('span')?.textContent ?? '');
 }
 
