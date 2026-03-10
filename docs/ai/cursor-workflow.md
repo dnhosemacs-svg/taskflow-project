@@ -55,4 +55,6 @@ Analizando el código se comprueba que hay varios puntos a mejorar.
 
     Creamos la carpeta .cursor y dentro creamos el archivo mcp.json con la configuración básica.
 
-    Después de reinicuar cursor compruebo que funciona.
+    Después de reinicuar cursor compruebo que funciona mediante el mismo char de cursor.
+
+        "Usa el servidor MCP de GitHub para listar mis repos de GitHub."
