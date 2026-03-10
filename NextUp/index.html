@@ -8,6 +8,93 @@
     <!-- Hoja de estilos generada/compilada (por ejemplo Tailwind -> output.css) -->
     <link rel="stylesheet" href="output.css">
 
+    <!--
+        Estilos específicos para el botón de cambio de tema (responsivo)
+        Cambios clave:
+        - En pantallas pequeñas (smartphone) ocultamos el texto y mostramos un icono.
+        - El icono es "tintable" usando máscara CSS (mask-image), para poder darle colores exactos
+          de la paleta de la web sin modificar los SVG originales.
+        - En móvil el botón se vuelve plano (sin borde/fondo/sombra) para que se vea solo el icono.
+    -->
+    <style>
+        /* Layout del botón: texto + icono en línea */
+        #theme-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        #theme-toggle-icon {
+            width: 20px;
+            height: 20px;
+            display: none; /* por defecto oculto, se controla por media queries */
+            /*
+                Icono tintable (mask):
+                - En vez de <img>, usamos un <span> con mask-image.
+                - El color lo pone background-color, así se adapta a la paleta.
+                - data-icon elige qué SVG usar como máscara.
+            */
+            background-color: var(--icon-color, currentColor);
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-position: center;
+            mask-position: center;
+            -webkit-mask-size: contain;
+            mask-size: contain;
+        }
+
+        /* Colores requeridos por icono (según lo pedido) */
+        /* Luna (cuando NO está en dark): mismo color que el fondo en dark mode */
+        #theme-toggle-icon[data-icon="moon"] {
+            --icon-color: var(--color-slate-900);
+            -webkit-mask-image: url("Imagenes/moon-fill.svg");
+            mask-image: url("Imagenes/moon-fill.svg");
+        }
+
+        /* Sol (cuando SÍ está en dark): mismo color que el h1 (dark:text-blue-300) */
+        #theme-toggle-icon[data-icon="sun"] {
+            --icon-color: var(--color-blue-300);
+            -webkit-mask-image: url("Imagenes/sun-fill.svg");
+            mask-image: url("Imagenes/sun-fill.svg");
+        }
+
+        /* En pantallas pequeñas (smartphones) se muestra solo el icono */
+        @media (max-width: 640px) {
+            /*
+                En móvil: el botón se vuelve "plano"
+                (sin borde, sin fondo, sin sombra, sin padding).
+                Así el usuario ve únicamente el icono en la esquina.
+            */
+            #theme-toggle {
+                border: none;
+                background: transparent;
+                box-shadow: none;
+                padding: 0;
+            }
+
+            /* En móvil ocultamos el texto y mostramos el icono */
+            #theme-toggle-text {
+                display: none;
+            }
+
+            #theme-toggle-icon {
+                display: inline-block;
+            }
+        }
+
+        /* En pantallas más grandes se muestra solo el texto */
+        @media (min-width: 641px) {
+            /* En escritorio/tablet: texto visible, icono oculto */
+            #theme-toggle-text {
+                display: inline;
+            }
+
+            #theme-toggle-icon {
+                display: none;
+            }
+        }
+    </style>
+
     <!-- Título que aparece en la pestaña del navegador -->
     <title>NextUp</title>
 </head>
@@ -44,7 +131,18 @@
                bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100
                shadow hover:bg-slate-200 dark:hover:bg-slate-700 transition z-50"
     >
-        Modo oscuro
+        <!-- Texto del botón (en móvil se oculta por CSS) -->
+        <span id="theme-toggle-text">Modo oscuro</span>
+        <!--
+            Icono del botón (solo visible en móvil):
+            - Es un <span> con máscara CSS (no un <img>) para poder "tintar" el icono.
+            - data-icon alterna entre "moon" y "sun" según el tema actual.
+        -->
+        <span
+            id="theme-toggle-icon"
+            data-icon="moon"
+            aria-hidden="true"
+        ></span>
     </button>
 
         <!-- Buscador: filtra tareas (la lógica suele estar en `app.js`) -->
@@ -88,7 +186,7 @@
         <!-- Lista donde se renderizan las tareas pendientes -->
         <h2 class="text-2xl font-serif text-primario dark:text-blue-300 mb-3">Tareas pendientes</h2>
         <!-- `id="elemento"`: el JS inserta aquí los <li> de cada tarea -->
-        <ul id="elemento" class="space-y-3"></ul>
+        <ul id="elemento" class="space-y-3 p-3 rounded-lg bg-[#F3F4F6] dark:bg-[#1F2937] text-[#111827] dark:text-[#F9FAFB]"></ul>
 
     </section>
 
@@ -117,19 +215,35 @@
             }
         }
 
-        // Cambia el texto del botón según el tema actual
-        function updateButtonText() {
-            toggleBtn.textContent = html.classList.contains('dark')
-                ? 'Modo claro'
-                : 'Modo oscuro';
+        // Referencias al contenido interno del botón (texto + icono)
+        // Nota: el icono es un <span> con data-icon, no un <img>, para controlar color por CSS.
+        const toggleText = document.getElementById('theme-toggle-text');
+        const toggleIcon = document.getElementById('theme-toggle-icon');
+
+        // Actualiza el texto, el icono (data-icon) y la etiqueta accesible del botón
+        function updateButtonContent() {
+            const isDark = html.classList.contains('dark');
+
+            if (toggleText) {
+                toggleText.textContent = isDark ? 'Modo claro' : 'Modo oscuro';
+            }
+
+            if (toggleIcon) {
+                // Cambiamos el "tipo" de icono; el CSS decide el SVG (mask-image) y su color.
+                toggleIcon.dataset.icon = isDark ? 'sun' : 'moon';
+            }
+
+            // Accesibilidad: aunque en móvil se oculte el texto, el botón mantiene etiqueta
+            toggleBtn.setAttribute('aria-label', isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
         }
-        updateButtonText();
+
+        updateButtonContent();
 
         // Alternar tema al hacer click y persistir la elección
         toggleBtn.addEventListener('click', () => {
             const isDark = html.classList.toggle('dark');
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
-            updateButtonText();
+            updateButtonContent();
         });
     </script>
 

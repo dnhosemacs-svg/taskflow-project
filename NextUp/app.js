@@ -56,7 +56,7 @@ function addTask() {
   const li = document.createElement('li');
   li.classList.add(
     'task-item', 'flex', 'items-center', 'gap-2', 'py-2', 'px-3',
-    'bg-gray-50', 'rounded-lg', 'shadow-sm', 'transition-all', 'duration-200',
+    'bg-white', 'dark:bg-slate-700', 'rounded-lg', 'shadow-sm', 'transition-all', 'duration-200',
     'opacity-0', 'translate-x-4'
   );
 
@@ -74,7 +74,7 @@ function addTask() {
   // Texto visible de la tarea.
   const span = document.createElement('span');
   span.textContent = text;
-  span.classList.add('flex-1', 'text-gray-700');
+  span.classList.add('flex-1', 'text-inherit');
 
   // Montamos la estructura final: [botón borrar] + [texto]
   li.appendChild(deleteBtn);
@@ -97,7 +97,7 @@ function createTaskElement(text) {
   const li = document.createElement('li');
   li.classList.add(
     'task-item', 'flex', 'items-center', 'gap-2', 'py-2', 'px-3',
-    'bg-gray-50', 'rounded-lg', 'shadow-sm', 'transition-all', 'duration-200',
+    'bg-white', 'dark:bg-slate-700', 'rounded-lg', 'shadow-sm', 'transition-all', 'duration-200',
     'opacity-0', 'translate-x-4'
   );
 
@@ -113,7 +113,7 @@ function createTaskElement(text) {
 
   const span = document.createElement('span');
   span.textContent = text;
-  span.classList.add('flex-1', 'text-gray-700');
+  span.classList.add('flex-1', 'text-inherit');
 
   li.appendChild(deleteBtn);
   li.appendChild(span);
