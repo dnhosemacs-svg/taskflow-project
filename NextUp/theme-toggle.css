@@ -1,0 +1,77 @@
+/* Layout del botón: texto + icono en línea */
+#theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#theme-toggle-icon {
+  width: 20px;
+  height: 20px;
+  display: none; /* por defecto oculto, se controla por media queries */
+  /*
+    Icono tintable (mask):
+    - En vez de <img>, usamos un <span> con mask-image.
+    - El color lo pone background-color, así se adapta a la paleta.
+    - data-icon elige qué SVG usar como máscara.
+  */
+  background-color: var(--icon-color, currentColor);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+/* Colores requeridos por icono (según lo pedido) */
+/* Luna (cuando NO está en dark): mismo color que el fondo en dark mode */
+#theme-toggle-icon[data-icon="moon"] {
+  --icon-color: var(--color-slate-900);
+  -webkit-mask-image: url("Imagenes/moon-fill.svg");
+  mask-image: url("Imagenes/moon-fill.svg");
+}
+
+/* Sol (cuando SÍ está en dark): mismo color que el h1 (dark:text-blue-300) */
+#theme-toggle-icon[data-icon="sun"] {
+  --icon-color: var(--color-blue-300);
+  -webkit-mask-image: url("Imagenes/sun-fill.svg");
+  mask-image: url("Imagenes/sun-fill.svg");
+}
+
+/* En pantallas pequeñas (smartphones) se muestra solo el icono */
+@media (max-width: 640px) {
+  /*
+    En móvil: el botón se vuelve "plano"
+    (sin borde, sin fondo, sin sombra, sin padding).
+    Así el usuario ve únicamente el icono en la esquina.
+  */
+  #theme-toggle {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  /* En móvil ocultamos el texto y mostramos el icono */
+  #theme-toggle-text {
+    display: none;
+  }
+
+  #theme-toggle-icon {
+    display: inline-block;
+  }
+}
+
+/* En pantallas más grandes se muestra solo el texto */
+@media (min-width: 641px) {
+  /* En escritorio/tablet: texto visible, icono oculto */
+  #theme-toggle-text {
+    display: inline;
+  }
+
+  #theme-toggle-icon {
+    display: none;
+  }
+}
+
