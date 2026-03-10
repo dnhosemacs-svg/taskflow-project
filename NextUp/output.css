@@ -213,6 +213,9 @@
   .flex {
     display: flex;
   }
+  .inline {
+    display: inline;
+  }
   .table {
     display: table;
   }

@@ -46,12 +46,8 @@ taskList.addEventListener('click', function(event) {
   }
 });
 
-// ===== Crear y añadir una tarea nueva desde el input =====
-function addTask() {
-  // Leemos el texto, quitando espacios de inicio/fin.
-  const text = input.value.trim();
-  if (text === "") return;
-
+// ===== Crear el elemento <li> de una tarea (utilidad compartida) =====
+function createTaskElement(text) {
   // Creamos el <li> con clases (Tailwind) y estado inicial para animación de entrada.
   const li = document.createElement('li');
   li.classList.add(
@@ -80,50 +76,27 @@ function addTask() {
   li.appendChild(deleteBtn);
   li.appendChild(span);
 
-  // Insertamos en la lista y actualizamos estado + persistencia.
+  // Insertamos en la lista
   taskList.appendChild(li);
+
+  // Animación de entrada (se aplica después de insertar)
+  setTimeout(() => {
+    li.classList.remove('opacity-0', 'translate-x-4');
+  }, 10);
+
+  return li;
+}
+
+// ===== Crear y añadir una tarea nueva desde el input =====
+function addTask() {
+  // Leemos el texto, quitando espacios de inicio/fin.
+  const text = input.value.trim();
+  if (text === "") return;
+
+  createTaskElement(text);
   tasks.push(text);
   saveTasks();
   input.value = "";
-
-  // Animación de entrada
-  setTimeout(() => {
-    li.classList.remove('opacity-0', 'translate-x-4');
-  }, 10);
-}
-
-// ===== Crear un <li> para una tarea existente (usado al cargar desde localStorage) =====
-function createTaskElement(text) {
-  const li = document.createElement('li');
-  li.classList.add(
-    'task-item', 'flex', 'items-center', 'gap-2', 'py-2', 'px-3',
-    'bg-white', 'dark:bg-slate-700', 'rounded-lg', 'shadow-sm', 'transition-all', 'duration-200',
-    'opacity-0', 'translate-x-4'
-  );
-
-  const deleteBtn = document.createElement('button');
-  deleteBtn.classList.add('delete-btn', 'cursor-pointer');
-
-  const img = document.createElement('img');
-  img.src = 'Imagenes/boton.png';
-  img.alt = 'Eliminar';
-  img.className = "w-[25px] h-[25px] rounded-full"; // ← tamaño corregido
-
-  deleteBtn.appendChild(img);
-
-  const span = document.createElement('span');
-  span.textContent = text;
-  span.classList.add('flex-1', 'text-inherit');
-
-  li.appendChild(deleteBtn);
-  li.appendChild(span);
-
-  taskList.appendChild(li);
-
-  // Animación de entrada al cargar
-  setTimeout(() => {
-    li.classList.remove('opacity-0', 'translate-x-4');
-  }, 10);
 }
 
 // ===== Persistencia (localStorage) =====
