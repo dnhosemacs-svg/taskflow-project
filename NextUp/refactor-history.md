@@ -24,3 +24,10 @@ Este archivo documenta, paso a paso, los cambios de refactorización que vamos r
     - Inserta el elemento en la lista y aplica la animación de entrada.
   - `addTask()` ahora delega en `createTaskElement(text)` para no duplicar estructura y estilos.
 
+- **`app.js` + tests → modelo de tareas con IDs**
+  - `tasks` deja de ser un array de strings y pasa a ser un array de objetos `{ id, text }`, generando IDs únicos con `generateTaskId()`.
+  - `createTaskElement()` ahora recibe o bien una string o bien un objeto tarea, asigna `data-id` al `<li>` y coloca el texto desde `task.text`.
+  - El manejador de borrado usa `li.dataset.id` para filtrar `tasks` por `id`, evitando problemas con tareas duplicadas.
+  - `loadTasks()` migra automáticamente desde el formato antiguo de `localStorage` (array de strings) al nuevo (array de objetos).
+  - En `tests/tests.js`, el helper `readStoredTasks()` se actualiza para devolver siempre un array de textos, independientemente del formato interno guardado.
+

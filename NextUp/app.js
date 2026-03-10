@@ -11,11 +11,17 @@ const taskList = document.getElementById('elemento');
 const searchInput = document.getElementById('search');
 
 // ===== Estado en memoria (fuente de verdad) =====
-// Aquí guardamos el listado de tareas como strings.
+// Guardamos cada tarea como objeto: { id: string, text: string }.
 let tasks = [];
 
-// Nota: esta variable no se usa actualmente (no afecta al funcionamiento).
-var tamañoImg = 30;
+// Genera un id único sencillo para cada tarea.
+function generateTaskId() {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function createTask(text) {
+  return { id: generateTaskId(), text };
+}
 
 // ===== Eventos de UI =====
 // Al enviar el formulario: evitamos recargar la página y añadimos la tarea.
@@ -32,12 +38,15 @@ taskList.addEventListener('click', function(event) {
   // Buscamos si el click ocurrió (o burbujeó) desde un elemento con clase `.delete-btn`.
   const deleteBtn = event.target.closest('.delete-btn');
   if (deleteBtn) {
-    // El <li> es el contenedor de la tarea. Dentro hay un <span> con el texto.
-    const li = deleteBtn.parentElement;
-    const text = li.querySelector('span').textContent;
+    const li = deleteBtn.closest('li');
+    if (!li) return;
+
+    const id = li.dataset.id;
 
     // Quitamos la tarea del array y persistimos el nuevo estado.
-    tasks = tasks.filter(task => task !== text);
+    if (id) {
+      tasks = tasks.filter(task => task.id !== id);
+    }
     saveTasks();
 
     // Animación de salida
@@ -47,7 +56,11 @@ taskList.addEventListener('click', function(event) {
 });
 
 // ===== Crear el elemento <li> de una tarea (utilidad compartida) =====
-function createTaskElement(text) {
+function createTaskElement(taskOrText) {
+  const task = typeof taskOrText === 'string'
+    ? createTask(taskOrText)
+    : taskOrText;
+
   // Creamos el <li> con clases (Tailwind) y estado inicial para animación de entrada.
   const li = document.createElement('li');
   li.classList.add(
@@ -55,6 +68,9 @@ function createTaskElement(text) {
     'bg-white', 'dark:bg-slate-700', 'rounded-lg', 'shadow-sm', 'transition-all', 'duration-200',
     'opacity-0', 'translate-x-4'
   );
+
+  // Asociamos el id de la tarea al elemento DOM.
+  li.dataset.id = task.id;
 
   // Botón de borrar (lleva dentro una imagen como icono).
   const deleteBtn = document.createElement('button');
@@ -69,7 +85,7 @@ function createTaskElement(text) {
 
   // Texto visible de la tarea.
   const span = document.createElement('span');
-  span.textContent = text;
+  span.textContent = task.text;
   span.classList.add('flex-1', 'text-inherit');
 
   // Montamos la estructura final: [botón borrar] + [texto]
@@ -93,8 +109,9 @@ function addTask() {
   const text = input.value.trim();
   if (text === "") return;
 
-  createTaskElement(text);
-  tasks.push(text);
+  const task = createTask(text);
+  tasks.push(task);
+  createTaskElement(task);
   saveTasks();
   input.value = "";
 }
@@ -109,7 +126,17 @@ function saveTasks() {
 function loadTasks() {
   const storedTasks = localStorage.getItem('tasks');
   if (storedTasks) {
-    tasks = JSON.parse(storedTasks);
+    const parsed = JSON.parse(storedTasks);
+
+    if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'string') {
+      // Formato antiguo: array de strings → migramos a objetos.
+      tasks = parsed.map(text => createTask(text));
+    } else if (Array.isArray(parsed)) {
+      tasks = parsed;
+    } else {
+      tasks = [];
+    }
+
     tasks.forEach(task => createTaskElement(task));
   }
 }

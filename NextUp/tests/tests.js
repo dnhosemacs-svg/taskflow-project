@@ -12,7 +12,15 @@ function sleep(ms) {
 
 function readStoredTasks() {
   const raw = localStorage.getItem('tasks');
-  return raw ? JSON.parse(raw) : null;
+  if (!raw) return null;
+
+  const parsed = JSON.parse(raw);
+  if (!Array.isArray(parsed)) return null;
+
+  // Soporta formato antiguo (array de strings) y nuevo (array de objetos { id, text }).
+  if (parsed.length === 0) return [];
+  if (typeof parsed[0] === 'string') return parsed;
+  return parsed.map((t) => t.text);
 }
 
 function assert(condition, message) {
