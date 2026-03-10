@@ -1,28 +1,43 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <!-- Metadatos básicos del documento (codificación y responsive) -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Hoja de estilos generada/compilada (por ejemplo Tailwind -> output.css) -->
     <link rel="stylesheet" href="output.css">
+
+    <!-- Título que aparece en la pestaña del navegador -->
     <title>NextUp</title>
 </head>
 
-<!-- AÑADIMOS dark:... PARA QUE CAMBIE EL FONDO Y EL TEXTO -->
+<!--
+    Estructura general
+    - Usamos la clase `dark` en el elemento <html> para activar estilos "dark:" (Tailwind).
+    - En <body> definimos fondo, color de texto, tipografía y layout general centrado.
+-->
 <body class="bg-[#E3F2FD] dark:bg-slate-900 text-texto dark:text-slate-100 font-sans min-h-screen flex flex-col items-center">
 
-    <!-- HEADER CON H1 CENTRADO -->
+    <!-- Encabezado fijo de la app: contiene el nombre/branding -->
     <header class="w-full py-6 shadow-md flex justify-center items-center">
+        <!-- Título principal visible -->
         <h1 class="text-5xl font-serif text-primario dark:text-blue-300">NextUp</h1>
     </header>
 
+    <!-- Bloque de prueba (comentado). Útil para verificar dark mode rápidamente. -->
     <!--<div class="bg-white dark:bg-black text-black dark:text-white p-10">
         TEST DARK MODE
     </div> -->
 
-    <!-- CONTENEDOR PRINCIPAL -->
+    <!-- Contenedor principal: agrupa buscador, formulario de alta y lista de tareas -->
     <section class="bg-white dark:bg-slate-800 max-w-xl w-full mt-10 p-8 rounded-xl shadow-lg">
 
-        <!-- BOTÓN DARK MODE -->
+        <!--
+            Botón de tema (modo claro/oscuro)
+            - `id="theme-toggle"`: lo usa el script para escuchar el click y actualizar el texto.
+            - `fixed top-4 right-4`: lo fija en la esquina superior derecha, fuera del flujo normal.
+        -->
     <button
         id="theme-toggle"
         class="fixed top-4 right-4 px-3 py-1 rounded-md border-2 border-primario rounded-lg dark:border-slate-600
@@ -32,8 +47,9 @@
         Modo oscuro
     </button>
 
-        <!-- BUSCADOR -->
+        <!-- Buscador: filtra tareas (la lógica suele estar en `app.js`) -->
         <h2 class="text-2xl font-serif text-primario dark:text-blue-300 mb-3">Barra de búsqueda</h2>
+        <!-- `id="search"`: lo usa el JS para leer lo que escribe el usuario y filtrar -->
         <input 
             type="text" 
             id="search" 
@@ -43,10 +59,15 @@
                    dark:focus:bg-slate-600 transition mb-8"
         >
 
-        <!-- AÑADIR TAREA -->
+        <!-- Formulario para añadir una tarea nueva -->
         <h2 class="text-2xl font-serif text-primario dark:text-blue-300 mb-3">Añadir tarea</h2>
 
+        <!--
+            `id="formulario"`: el JS intercepta el submit para crear la tarea sin recargar la página.
+            El layout `flex` coloca input + botón en una misma fila.
+        -->
         <form id="formulario" class="flex items-center gap-3 mb-8">
+            <!-- `id="entrada"`: campo donde se escribe el texto de la tarea -->
             <input 
                 type="text" 
                 id="entrada" 
@@ -57,24 +78,32 @@
                        dark:focus:bg-slate-600 transition"
             >
 
-            <!-- BOTÓN AÑADIR (30px) -->
+            <!-- Botón de envío del formulario: al hacer click dispara el submit -->
             <button type="submit" class="w-[30px] h-[30px] bg-primario rounded-full flex items-center justify-center shadow-md hover:bg-blue-900 transition">
+                <!-- Icono del botón (imagen local). El alt mejora accesibilidad. -->
                 <img src="Imagenes/BotonAñadir.png" alt="Añadir" class="w-[22px] h-[22px] rounded-full">
             </button>
         </form>
 
-        <!-- LISTA DE TAREAS -->
+        <!-- Lista donde se renderizan las tareas pendientes -->
         <h2 class="text-2xl font-serif text-primario dark:text-blue-300 mb-3">Tareas pendientes</h2>
+        <!-- `id="elemento"`: el JS inserta aquí los <li> de cada tarea -->
         <ul id="elemento" class="space-y-3"></ul>
 
     </section>
 
-    <!-- SCRIPT DARK MODE -->
+    <!--
+        Script de tema (dark mode)
+        - Decide el tema inicial usando localStorage o preferencia del sistema.
+        - Alterna la clase `dark` en <html> para activar estilos `dark:*`.
+    -->
     <script>
+        // Referencia al elemento <html> (donde se añade/quita la clase `dark`)
         const html = document.documentElement;
+        // Botón que el usuario pulsa para alternar el tema
         const toggleBtn = document.getElementById('theme-toggle');
 
-        // Leer preferencia guardada
+        // Leer preferencia guardada (si existe)
         const storedTheme = localStorage.getItem('theme');
 
         if (storedTheme === 'dark') {
@@ -82,13 +111,13 @@
         } else if (storedTheme === 'light') {
             html.classList.remove('dark');
         } else {
-            // Si no hay preferencia, usar la del sistema
+            // Si no hay preferencia guardada, usar la del sistema operativo/navegador
             if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
                 html.classList.add('dark');
             }
         }
 
-        // Actualizar texto del botón
+        // Cambia el texto del botón según el tema actual
         function updateButtonText() {
             toggleBtn.textContent = html.classList.contains('dark')
                 ? 'Modo claro'
@@ -96,7 +125,7 @@
         }
         updateButtonText();
 
-        // Alternar modo
+        // Alternar tema al hacer click y persistir la elección
         toggleBtn.addEventListener('click', () => {
             const isDark = html.classList.toggle('dark');
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
@@ -104,6 +133,7 @@
         });
     </script>
 
+    <!-- Script principal de la app (tareas, renderizado, eventos, etc.) -->
     <script src="app.js"></script>
 </body>
 </html>

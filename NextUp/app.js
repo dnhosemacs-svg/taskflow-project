@@ -1,22 +1,42 @@
+/*
+  NextUp - Lógica principal (tareas)
+  - Conecta el HTML con JavaScript usando IDs.
+  - Permite: añadir tareas, eliminarlas, guardarlas en localStorage y buscarlas.
+*/
+
+// ===== Referencias a elementos del DOM (IDs definidos en index.html) =====
 const form = document.getElementById('formulario');
 const input = document.getElementById('entrada');
 const taskList = document.getElementById('elemento');
 const searchInput = document.getElementById('search');
+
+// ===== Estado en memoria (fuente de verdad) =====
+// Aquí guardamos el listado de tareas como strings.
 let tasks = [];
+
+// Nota: esta variable no se usa actualmente (no afecta al funcionamiento).
 var tamañoImg = 30;
 
+// ===== Eventos de UI =====
+// Al enviar el formulario: evitamos recargar la página y añadimos la tarea.
 form.addEventListener('submit', function(event) {
   event.preventDefault();
   addTask();
 });
 
+// Al escribir en el buscador: filtramos la lista en tiempo real.
 searchInput.addEventListener('input', filterTasks);
 
+// Delegación de eventos: un solo listener en la <ul> para detectar clicks en botones de borrar.
 taskList.addEventListener('click', function(event) {
+  // Buscamos si el click ocurrió (o burbujeó) desde un elemento con clase `.delete-btn`.
   const deleteBtn = event.target.closest('.delete-btn');
   if (deleteBtn) {
+    // El <li> es el contenedor de la tarea. Dentro hay un <span> con el texto.
     const li = deleteBtn.parentElement;
     const text = li.querySelector('span').textContent;
+
+    // Quitamos la tarea del array y persistimos el nuevo estado.
     tasks = tasks.filter(task => task !== text);
     saveTasks();
 
@@ -26,10 +46,13 @@ taskList.addEventListener('click', function(event) {
   }
 });
 
+// ===== Crear y añadir una tarea nueva desde el input =====
 function addTask() {
+  // Leemos el texto, quitando espacios de inicio/fin.
   const text = input.value.trim();
   if (text === "") return;
 
+  // Creamos el <li> con clases (Tailwind) y estado inicial para animación de entrada.
   const li = document.createElement('li');
   li.classList.add(
     'task-item', 'flex', 'items-center', 'gap-2', 'py-2', 'px-3',
@@ -37,6 +60,7 @@ function addTask() {
     'opacity-0', 'translate-x-4'
   );
 
+  // Botón de borrar (lleva dentro una imagen como icono).
   const deleteBtn = document.createElement('button');
   deleteBtn.classList.add('delete-btn', 'cursor-pointer');
 
@@ -47,13 +71,16 @@ function addTask() {
 
   deleteBtn.appendChild(img);
 
+  // Texto visible de la tarea.
   const span = document.createElement('span');
   span.textContent = text;
   span.classList.add('flex-1', 'text-gray-700');
 
+  // Montamos la estructura final: [botón borrar] + [texto]
   li.appendChild(deleteBtn);
   li.appendChild(span);
 
+  // Insertamos en la lista y actualizamos estado + persistencia.
   taskList.appendChild(li);
   tasks.push(text);
   saveTasks();
@@ -65,6 +92,7 @@ function addTask() {
   }, 10);
 }
 
+// ===== Crear un <li> para una tarea existente (usado al cargar desde localStorage) =====
 function createTaskElement(text) {
   const li = document.createElement('li');
   li.classList.add(
@@ -98,10 +126,13 @@ function createTaskElement(text) {
   }, 10);
 }
 
+// ===== Persistencia (localStorage) =====
+// Guarda el array `tasks` como JSON en el navegador.
 function saveTasks() {
   localStorage.setItem('tasks', JSON.stringify(tasks));
 }
 
+// Carga tareas guardadas (si existen) y las renderiza en la lista.
 function loadTasks() {
   const storedTasks = localStorage.getItem('tasks');
   if (storedTasks) {
@@ -110,6 +141,8 @@ function loadTasks() {
   }
 }
 
+// ===== Filtro/búsqueda =====
+// Muestra/oculta cada <li> según si su texto contiene lo que se escribe en el buscador.
 function filterTasks() {
   const searchText = searchInput.value.toLowerCase();
   const items = taskList.getElementsByTagName('li');
@@ -120,4 +153,6 @@ function filterTasks() {
   });
 }
 
+// ===== Inicialización =====
+// Al cargar la página, restauramos las tareas guardadas.
 loadTasks();
