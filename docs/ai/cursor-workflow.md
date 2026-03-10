@@ -46,3 +46,13 @@ Analizando el código se comprueba que hay varios puntos a mejorar.
     filterTasks(): usa li.style.display (mejor una clase CSS/Tailwind para ocultar/mostrar).
 
     Variable sin uso: var tamañoImg = 30;.
+
+    Instalar MCP:
+
+    Teniendo previamente Node v24.14.0 y Python 3.14.3 se puede instalas MCP para que funcione con cualquiera de los dos.
+
+    En mi caso voy a usar un servidor MCP remoto de github y para ello he ggenerado un token.
+
+    Creamos la carpeta .cursor y dentro creamos el archivo mcp.json con la configuración básica.
+
+    Después de reinicuar cursor compruebo que funciona.

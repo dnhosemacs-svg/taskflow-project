@@ -23,3 +23,7 @@ yarn-error.log*
 .cache/
 dist/
 build/
+
+# Token
+NextUp/.cursor/mcp.json
+
