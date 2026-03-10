@@ -4,6 +4,12 @@
   - Permite: añadir tareas, eliminarlas, guardarlas en localStorage y buscarlas.
 */
 
+/**
+ * @typedef {Object} Task
+ * @property {string} id
+ * @property {string} text
+ */
+
 // ===== Referencias a elementos del DOM (IDs definidos en index.html) =====
 const form = document.getElementById('formulario');
 const input = document.getElementById('entrada');
@@ -12,13 +18,22 @@ const searchInput = document.getElementById('search');
 
 // ===== Estado en memoria (fuente de verdad) =====
 // Guardamos cada tarea como objeto: { id: string, text: string }.
+/** @type {Task[]} */
 let tasks = [];
 
-// Genera un id único sencillo para cada tarea.
+/**
+ * Genera un id único (best-effort) para cada tarea.
+ * @returns {string}
+ */
 function generateTaskId() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/**
+ * Crea un objeto tarea.
+ * @param {string} text
+ * @returns {Task}
+ */
 function createTask(text) {
   return { id: generateTaskId(), text };
 }
@@ -56,6 +71,11 @@ taskList.addEventListener('click', function(event) {
 });
 
 // ===== Crear el elemento <li> de una tarea (utilidad compartida) =====
+/**
+ * Crea y añade al DOM el elemento `<li>` para una tarea.
+ * @param {Task|string} taskOrText
+ * @returns {HTMLLIElement}
+ */
 function createTaskElement(taskOrText) {
   const task = typeof taskOrText === 'string'
     ? createTask(taskOrText)
@@ -104,6 +124,10 @@ function createTaskElement(taskOrText) {
 }
 
 // ===== Crear y añadir una tarea nueva desde el input =====
+/**
+ * Lee el input, crea la tarea, la renderiza y persiste.
+ * @returns {void}
+ */
 function addTask() {
   // Leemos el texto, quitando espacios de inicio/fin.
   const text = input.value.trim();
@@ -118,11 +142,20 @@ function addTask() {
 
 // ===== Persistencia (localStorage) =====
 // Guarda el array `tasks` como JSON en el navegador.
+/**
+ * Persiste el estado actual de tareas en `localStorage`.
+ * @returns {void}
+ */
 function saveTasks() {
   localStorage.setItem('tasks', JSON.stringify(tasks));
 }
 
 // Carga tareas guardadas (si existen) y las renderiza en la lista.
+/**
+ * Carga tareas desde `localStorage` y las renderiza.
+ * Soporta migración desde el formato antiguo (array de strings).
+ * @returns {void}
+ */
 function loadTasks() {
   const storedTasks = localStorage.getItem('tasks');
   if (storedTasks) {
@@ -143,6 +176,10 @@ function loadTasks() {
 
 // ===== Filtro/búsqueda =====
 // Muestra/oculta cada <li> según si su texto contiene lo que se escribe en el buscador.
+/**
+ * Filtra tareas en el DOM según el valor de `#search`.
+ * @returns {void}
+ */
 function filterTasks() {
   const searchText = searchInput.value.toLowerCase();
   const items = taskList.getElementsByTagName('li');

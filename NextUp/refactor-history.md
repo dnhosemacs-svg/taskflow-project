@@ -48,3 +48,6 @@ Este archivo documenta, paso a paso, los cambios de refactorización que vamos r
   - Se actualizó `tailwind.config.js` para escanear `index.html`, `src/**/*.js` y `styles/**/*.css`.
   - Se añadieron scripts en `package.json` para generar `styles/output.css` (`npm run build:css` / `npm run watch:css`).
 
+- **JSDoc en funciones clave**
+  - Se añadieron anotaciones JSDoc en `src/app.js` y `src/theme.js` para mejorar autocompletado, documentación y seguridad durante refactors (tipos, params, returns y efectos secundarios).
+

@@ -7,6 +7,12 @@ const toggleBtn = document.getElementById('theme-toggle');
 const toggleText = document.getElementById('theme-toggle-text');
 const toggleIcon = document.getElementById('theme-toggle-icon');
 
+/**
+ * Inicializa el tema:
+ * - `localStorage.theme` (si existe) tiene prioridad
+ * - si no, usa `prefers-color-scheme`
+ * @returns {void}
+ */
 function initTheme() {
   const storedTheme = localStorage.getItem('theme');
 
@@ -19,6 +25,10 @@ function initTheme() {
   }
 }
 
+/**
+ * Sincroniza el contenido del botón (texto, icono y aria-label) con el tema actual.
+ * @returns {void}
+ */
 function updateButtonContent() {
   if (!toggleBtn) return;
 
@@ -35,6 +45,10 @@ function updateButtonContent() {
   toggleBtn.setAttribute('aria-label', isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
 }
 
+/**
+ * Registra el listener de click para alternar tema y persistirlo.
+ * @returns {void}
+ */
 function bindThemeToggle() {
   if (!toggleBtn) return;
 
