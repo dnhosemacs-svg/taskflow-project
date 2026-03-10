@@ -28,15 +28,15 @@
 /* Luna (cuando NO está en dark): mismo color que el fondo en dark mode */
 #theme-toggle-icon[data-icon="moon"] {
   --icon-color: var(--color-slate-900);
-  -webkit-mask-image: url("Imagenes/moon-fill.svg");
-  mask-image: url("Imagenes/moon-fill.svg");
+  -webkit-mask-image: url("../Imagenes/moon-fill.svg");
+  mask-image: url("../Imagenes/moon-fill.svg");
 }
 
 /* Sol (cuando SÍ está en dark): mismo color que el h1 (dark:text-blue-300) */
 #theme-toggle-icon[data-icon="sun"] {
   --icon-color: var(--color-blue-300);
-  -webkit-mask-image: url("Imagenes/sun-fill.svg");
-  mask-image: url("Imagenes/sun-fill.svg");
+  -webkit-mask-image: url("../Imagenes/sun-fill.svg");
+  mask-image: url("../Imagenes/sun-fill.svg");
 }
 
 /* En pantallas pequeñas (smartphones) se muestra solo el icono */

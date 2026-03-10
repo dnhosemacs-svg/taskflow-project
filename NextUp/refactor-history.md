@@ -35,3 +35,16 @@ Este archivo documenta, paso a paso, los cambios de refactorización que vamos r
   - `filterTasks()` ahora alterna la clase `hidden` y además actualiza explícitamente `style.display` (`flex`/`none`) para cada `<li>`, asegurando que funcione tanto con Tailwind como en el entorno mínimo de tests.
   - En `tests/tests.js`, `visibleLiTexts()` usa `getComputedStyle(li).display` para determinar qué tareas están visibles, manteniendo los tests alineados con el comportamiento real.
 
+- **Estructura de carpetas en `NextUp/`**
+  - Se creó `src/` para JavaScript:
+    - `src/app.js`
+    - `src/theme.js`
+  - Se creó `styles/` para CSS:
+    - `styles/input.css`
+    - `styles/output.css` (generado por Tailwind)
+    - `styles/theme-toggle.css`
+  - `index.html` y `Imagenes/` se mantienen en la raíz de `NextUp/`.
+  - Se actualizaron rutas en `index.html` y `tests/test-runner.html` para apuntar a `src/` y `styles/`.
+  - Se actualizó `tailwind.config.js` para escanear `index.html`, `src/**/*.js` y `styles/**/*.css`.
+  - Se añadieron scripts en `package.json` para generar `styles/output.css` (`npm run build:css` / `npm run watch:css`).
+

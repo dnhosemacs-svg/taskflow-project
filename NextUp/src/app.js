@@ -158,3 +158,4 @@ function filterTasks() {
 // ===== Inicialización =====
 // Al cargar la página, restauramos las tareas guardadas.
 loadTasks();
+
