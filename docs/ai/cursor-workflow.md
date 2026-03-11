@@ -46,8 +46,11 @@ Analizando el código se comprueba que hay varios puntos a mejorar.
     filterTasks(): usa li.style.display (mejor una clase CSS/Tailwind para ocultar/mostrar).
 
     Variable sin uso: var tamañoImg = 30;.
+---------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------
 
-    Instalar MCP:
+
+Instalar MCP:
 
     Teniendo previamente Node v24.14.0 y Python 3.14.3 se puede instalas MCP para que funcione con cualquiera de los dos.
 
@@ -58,3 +61,16 @@ Analizando el código se comprueba que hay varios puntos a mejorar.
     Después de reinicuar cursor compruebo que funciona mediante el mismo char de cursor.
 
         "Usa el servidor MCP de GitHub para listar mis repos de GitHub."
+
+Consultas al MCP:
+
+    “Analiza este repositorio y genera un resumen técnico del proyecto”
+    “Sugiere mejoras en el código del archivo app.js”
+    “Genera tests unitarios para este archivo siguiendo el estilo del proyecto”
+    “Genera documentación automática de app.js”
+    “Detecta vulnerabilidades potenciales en el código y sugiere mitigaciones”
+
+Casos en que puede ser útil MCP:
+
+    En mi opinión MCP es útil cuando posees un servidor con herramientas específicas como por ejemplo uno de seguridad para yhacer frente a la última consula o para que haga mejoas en el código.
+    Por otro lado puede venir bien para generar el resumen técnico y así entender de manera algo más clara un proyecto atrabajar o bien para generar tantopruebas unitarias como documentación a partir del código.
