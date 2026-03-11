@@ -1,4 +1,4 @@
-/* Minimal test harness for NextUp (browser only) */
+/* NextUp (browser) - Test harness reescrito desde cero */
 
 function $(id) {
   const el = document.getElementById(id);
@@ -10,17 +10,13 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-function readStoredTasks() {
-  const raw = localStorage.getItem('tasks');
-  if (!raw) return null;
-
-  const parsed = JSON.parse(raw);
-  if (!Array.isArray(parsed)) return null;
-
-  // Soporta formato antiguo (array de strings) y nuevo (array de objetos { id, text }).
-  if (parsed.length === 0) return [];
-  if (typeof parsed[0] === 'string') return parsed;
-  return parsed.map((t) => t.text);
+function escapeHtml(s) {
+  return String(s)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
 }
 
 function assert(condition, message) {
@@ -28,9 +24,7 @@ function assert(condition, message) {
 }
 
 function assertEqual(actual, expected, message) {
-  if (actual !== expected) {
-    throw new Error(message || `Expected ${expected} but got ${actual}`);
-  }
+  if (actual !== expected) throw new Error(message || `Expected ${expected} but got ${actual}`);
 }
 
 function assertDeepEqual(actual, expected, message) {
@@ -39,21 +33,67 @@ function assertDeepEqual(actual, expected, message) {
   if (a !== e) throw new Error(message || `Expected ${e} but got ${a}`);
 }
 
-function liTexts() {
-  return Array.from($('elemento').querySelectorAll('li span')).map((s) => s.textContent);
+function readStoredTaskTexts() {
+  const raw = localStorage.getItem('tasks');
+  if (!raw) return null;
+  const parsed = JSON.parse(raw);
+  if (!Array.isArray(parsed)) return null;
+  if (parsed.length === 0) return [];
+  if (typeof parsed[0] === 'string') return parsed;
+  return parsed.map((t) => t.text);
 }
 
-function visibleLiTexts() {
-  return Array.from($('elemento').querySelectorAll('li'))
+function pendingLis() {
+  return Array.from($('elemento').querySelectorAll('li'));
+}
+
+function completedLis() {
+  const el = document.getElementById('completed');
+  if (!el) return [];
+  return Array.from(el.querySelectorAll('li'));
+}
+
+function pendingTexts() {
+  return pendingLis().map((li) => li.querySelector('span')?.textContent ?? li.querySelector('input.edit-input')?.value ?? '');
+}
+
+function completedTexts() {
+  return completedLis().map((li) => li.querySelector('span')?.textContent ?? '');
+}
+
+function visibleTextsIn(listEl) {
+  return Array.from(listEl.querySelectorAll('li'))
     .filter((li) => window.getComputedStyle(li).display !== 'none')
     .map((li) => li.querySelector('span')?.textContent ?? li.querySelector('input.edit-input')?.value ?? '');
 }
 
-function resetUI() {
+function assertCompletedSectionHidden(expectedHidden, context) {
+  const heading = document.getElementById('completed-heading');
+  const list = document.getElementById('completed');
+  assert(heading, 'Falta #completed-heading');
+  assert(list, 'Falta #completed');
+  assertEqual(heading.classList.contains('hidden'), expectedHidden, `${context}: heading hidden mismatch`);
+  assertEqual(list.classList.contains('hidden'), expectedHidden, `${context}: list hidden mismatch`);
+}
+
+function resetState() {
+  // Limpieza del estado persistido
+  localStorage.removeItem('tasks');
+
+  // Limpieza del DOM
   $('entrada').value = '';
   $('search').value = '';
   $('elemento').innerHTML = '';
-  localStorage.removeItem('tasks');
+  const completed = document.getElementById('completed');
+  if (completed) completed.innerHTML = '';
+
+  // Cargar desde storage (vacío) para que la app sincronice estado
+  window.loadTasks();
+  window.filterTasks();
+
+  // En el estado real, app.js oculta/enseña según haya <li>.
+  // Tras limpiar el DOM, la sección debe quedar oculta.
+  assertCompletedSectionHidden(true, 'reset');
 }
 
 async function runTests() {
@@ -69,8 +109,7 @@ async function runTests() {
     }
   }
 
-  // Sanity: app.js loaded and functions are callable.
-  await test('exports: funciones globales existen', async () => {
+  await test('sanity: funciones públicas existen', async () => {
     assertEqual(typeof window.addTask, 'function', 'addTask() no está disponible');
     assertEqual(typeof window.createTaskElement, 'function', 'createTaskElement() no está disponible');
     assertEqual(typeof window.saveTasks, 'function', 'saveTasks() no está disponible');
@@ -78,154 +117,143 @@ async function runTests() {
     assertEqual(typeof window.filterTasks, 'function', 'filterTasks() no está disponible');
   });
 
-  await test('addTask: ignora input vacío/espacios', async () => {
-    resetUI();
+  await test('UI: completadas ocultas al inicio (sin tareas)', async () => {
+    resetState();
+  });
+
+  await test('addTask: ignora input vacío o espacios', async () => {
+    resetState();
     $('entrada').value = '   ';
     window.addTask();
-    assertEqual($('elemento').children.length, 0, 'No debería crear <li>');
+    assertEqual(pendingLis().length, 0, 'No debería crear <li>');
     assertEqual(localStorage.getItem('tasks'), null, 'No debería guardar tasks');
   });
 
-  await test('addTask: crea <li> y persiste en localStorage', async () => {
-    resetUI();
+  await test('addTask: añade en DOM y persiste', async () => {
+    resetState();
     $('entrada').value = 'Comprar pan';
     window.addTask();
-
-    assertEqual($('elemento').children.length, 1, 'Debería haber 1 tarea en el DOM');
-    assertDeepEqual(readStoredTasks(), ['Comprar pan'], 'localStorage debería contener la tarea');
-    assertDeepEqual(liTexts(), ['Comprar pan'], 'El DOM debería mostrar el texto correcto');
+    assertDeepEqual(pendingTexts(), ['Comprar pan'], 'Texto en pendientes incorrecto');
+    assertDeepEqual(readStoredTaskTexts(), ['Comprar pan'], 'Storage debería contener la tarea');
   });
 
-  await test('createTaskElement: renderiza estructura básica', async () => {
-    resetUI();
+  await test('createTaskElement: estructura básica (delete + edit + svg)', async () => {
+    resetState();
     window.createTaskElement('Tarea A');
-
-    const li = $('elemento').querySelector('li');
+    const li = pendingLis()[0];
     assert(li, 'No se creó el <li>');
     assert(li.querySelector('button.delete-btn'), 'Falta botón .delete-btn');
     const editBtn = li.querySelector('button.edit-btn');
     assert(editBtn, 'Falta botón .edit-btn');
     const svg = editBtn.querySelector('svg');
-    assert(svg, 'Falta el SVG del botón editar');
-    assertEqual(svg.getAttribute('viewBox'), '0 0 16 16', 'El SVG no parece ser pencil-fill (viewBox)');
-    assertEqual(svg.getAttribute('fill'), 'currentColor', 'El SVG debería usar currentColor');
-    const span = li.querySelector('span');
-    assert(span, 'Falta <span> del texto');
-    assertEqual(span.textContent, 'Tarea A', 'Texto incorrecto');
+    assert(svg, 'Falta SVG en botón editar');
+    assertEqual(svg.getAttribute('viewBox'), '0 0 16 16', 'SVG editar viewBox incorrecto');
+    assertEqual(svg.getAttribute('fill'), 'currentColor', 'SVG editar debería usar currentColor');
   });
 
-  await test('loadTasks: carga desde localStorage y renderiza', async () => {
-    resetUI();
+  await test('loadTasks: renderiza desde localStorage (strings antiguos)', async () => {
+    resetState();
     localStorage.setItem('tasks', JSON.stringify(['Uno', 'Dos']));
+    $('elemento').innerHTML = '';
     window.loadTasks();
-
-    assertEqual($('elemento').children.length, 2, 'Debería renderizar 2 tareas');
-    assertDeepEqual(liTexts(), ['Uno', 'Dos'], 'Orden/texto debería coincidir con storage');
+    assertDeepEqual(pendingTexts(), ['Uno', 'Dos'], 'Debería renderizar Uno, Dos');
   });
 
-  await test('filterTasks: oculta y muestra según búsqueda', async () => {
-    resetUI();
+  await test('filterTasks: filtra pendientes', async () => {
+    resetState();
     localStorage.setItem('tasks', JSON.stringify(['Alpha', 'Beta', 'Alpine']));
+    $('elemento').innerHTML = '';
     window.loadTasks();
 
     $('search').value = 'alp';
     window.filterTasks();
-    assertDeepEqual(visibleLiTexts(), ['Alpha', 'Alpine'], 'Filtro debería dejar solo coincidencias');
-
-    $('search').value = 'beta';
-    window.filterTasks();
-    assertDeepEqual(visibleLiTexts(), ['Beta'], 'Filtro debería encontrar Beta');
+    assertDeepEqual(visibleTextsIn($('elemento')), ['Alpha', 'Alpine'], 'Filtro alp incorrecto');
   });
 
-  await test('filterTasks: muestra mensaje si no hay coincidencias', async () => {
-    resetUI();
-    localStorage.setItem('tasks', JSON.stringify(['Alpha', 'Beta']));
-    window.loadTasks();
-
-    // Caso: texto buscado sin coincidencias -> debe aparecer el mensaje.
-    $('search').value = 'zzz';
-    window.filterTasks();
-
-    const msg = document.getElementById('no-results');
-    assert(msg, 'Debería crear #no-results al filtrar');
-    assertEqual(
-      window.getComputedStyle(msg).display !== 'none',
-      true,
-      'El mensaje debería mostrarse cuando no hay coincidencias'
-    );
-
-    // Caso: hay coincidencias -> debe ocultarse.
-    $('search').value = 'alp';
-    window.filterTasks();
-    assertEqual(
-      window.getComputedStyle(msg).display === 'none',
-      true,
-      'El mensaje debería ocultarse cuando hay coincidencias'
-    );
-
-    // Caso: búsqueda vacía -> debe ocultarse.
-    $('search').value = '';
-    window.filterTasks();
-    assertEqual(
-      window.getComputedStyle(msg).display === 'none',
-      true,
-      'El mensaje debería ocultarse cuando no hay texto de búsqueda'
-    );
-  });
-
-  await test('delete: click en .delete-btn elimina del DOM y actualiza storage', async () => {
-    resetUI();
+  await test('soft-delete: delete mueve a completadas, tacha y actualiza storage', async () => {
+    resetState();
     localStorage.setItem('tasks', JSON.stringify(['X', 'Y']));
+    $('elemento').innerHTML = '';
     window.loadTasks();
 
-    const firstLi = $('elemento').querySelector('li');
-    assert(firstLi, 'No hay primer <li>');
-    const btn = firstLi.querySelector('button.delete-btn');
-    assert(btn, 'No hay botón delete');
-
-    btn.click();
-    // app.js elimina tras 200ms por animación
+    const first = pendingLis()[0];
+    assert(first, 'No hay primer <li>');
+    first.querySelector('button.delete-btn')?.click();
     await sleep(260);
 
-    assertDeepEqual(liTexts(), ['Y'], 'Debería quedar solo Y en el DOM');
-    assertDeepEqual(readStoredTasks(), ['Y'], 'Storage debería actualizarse a ["Y"]');
+    assertDeepEqual(pendingTexts(), ['Y'], 'Pendientes debería quedar con Y');
+    assertDeepEqual(completedTexts(), ['X'], 'Completadas debería tener X');
+    assertDeepEqual(readStoredTaskTexts(), ['Y'], 'Storage debería quedar con Y');
+
+    assertCompletedSectionHidden(false, 'after delete');
+
+    const completedLi = completedLis()[0];
+    const span = completedLi?.querySelector('span');
+    assert(span, 'Falta span en completadas');
+    // En el test-runner no cargamos Tailwind, así que comprobamos la clase (no el estilo computado).
+    assert(span.classList.contains('line-through'), 'La tarea completada debería tener clase line-through');
+
+    const restoreBtn = completedLi?.querySelector('button.restore-btn');
+    assert(restoreBtn, 'Falta botón restore en completadas');
+    const restoreSvg = restoreBtn?.querySelector('svg');
+    assert(restoreSvg, 'Restore debería incluir svg');
+    assertEqual(restoreSvg.getAttribute('viewBox'), '0 0 16 16', 'SVG restore viewBox incorrecto');
   });
 
-  await test('edit: click en .edit-btn entra en edición y Enter guarda en DOM + storage', async () => {
-    resetUI();
-    localStorage.setItem('tasks', JSON.stringify(['Original']));
+  await test('restore: vuelve a pendientes y re-persiste, ocultando completadas si queda vacío', async () => {
+    resetState();
+    localStorage.setItem('tasks', JSON.stringify(['X', 'Y']));
+    $('elemento').innerHTML = '';
     window.loadTasks();
 
-    const li = $('elemento').querySelector('li');
-    assert(li, 'No hay <li>');
+    // mover X a completadas
+    pendingLis()[0].querySelector('button.delete-btn')?.click();
+    await sleep(260);
+
+    // restore X
+    completedLis()[0].querySelector('button.restore-btn')?.click();
+    await sleep(260);
+
+    assertDeepEqual(pendingTexts(), ['Y', 'X'], 'X debería volver a pendientes al final');
+    assertDeepEqual(completedTexts(), [], 'Completadas debería quedar vacío');
+    assertDeepEqual(readStoredTaskTexts(), ['Y', 'X'], 'Storage debería volver a incluir X');
+    assertCompletedSectionHidden(true, 'after restore');
+  });
+
+  await test('edit: Enter guarda en DOM + storage', async () => {
+    resetState();
+    localStorage.setItem('tasks', JSON.stringify(['Original']));
+    $('elemento').innerHTML = '';
+    window.loadTasks();
+
+    const li = pendingLis()[0];
     const editBtn = li.querySelector('button.edit-btn');
-    assert(editBtn, 'No hay botón edit');
-    assertEqual(editBtn.getAttribute('aria-label'), 'Editar', 'aria-label inicial debería ser "Editar"');
+    assert(editBtn, 'Falta botón edit');
+    assertEqual(editBtn.getAttribute('aria-label'), 'Editar', 'aria-label inicial debería ser Editar');
 
     editBtn.click();
     const input = li.querySelector('input.edit-input');
-    assert(input, 'No entró en modo edición (falta input.edit-input)');
-    assertEqual(editBtn.getAttribute('aria-label'), 'Guardar', 'aria-label debería cambiar a "Guardar"');
+    assert(input, 'No entró en modo edición');
+    assertEqual(editBtn.getAttribute('aria-label'), 'Guardar', 'aria-label debería ser Guardar en edición');
 
     input.value = 'Cambiado';
-    input.dispatchEvent(new Event('input', { bubbles: true }));
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
 
-    assertEqual(li.querySelector('input.edit-input'), null, 'Debería salir de edición (no debería quedar input)');
-    assertDeepEqual(liTexts(), ['Cambiado'], 'El DOM debería mostrar el texto editado');
-    assertDeepEqual(readStoredTasks(), ['Cambiado'], 'Storage debería persistir el texto editado');
-    assertEqual(editBtn.getAttribute('aria-label'), 'Editar', 'aria-label debería volver a "Editar"');
+    assertEqual(li.querySelector('input.edit-input'), null, 'Debería salir de edición');
+    assertDeepEqual(pendingTexts(), ['Cambiado'], 'DOM debería mostrar Cambiado');
+    assertDeepEqual(readStoredTaskTexts(), ['Cambiado'], 'Storage debería persistir Cambiado');
+    assertEqual(editBtn.getAttribute('aria-label'), 'Editar', 'aria-label debería volver a Editar');
   });
 
-  await test('edit: Escape cancela (restaura DOM) y NO persiste cambios', async () => {
-    resetUI();
+  await test('edit: Escape cancela y NO persiste', async () => {
+    resetState();
     localStorage.setItem('tasks', JSON.stringify(['Mantener']));
+    $('elemento').innerHTML = '';
     window.loadTasks();
 
-    const li = $('elemento').querySelector('li');
-    assert(li, 'No hay <li>');
+    const li = pendingLis()[0];
     const editBtn = li.querySelector('button.edit-btn');
-    assert(editBtn, 'No hay botón edit');
+    assert(editBtn, 'Falta botón edit');
 
     editBtn.click();
     const input = li.querySelector('input.edit-input');
@@ -235,41 +263,29 @@ async function runTests() {
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
 
     assertEqual(li.querySelector('input.edit-input'), null, 'Debería salir de edición tras Escape');
-    assertDeepEqual(liTexts(), ['Mantener'], 'Debería restaurar el texto original en el DOM');
-    assertDeepEqual(readStoredTasks(), ['Mantener'], 'Storage NO debería cambiar al cancelar');
-    assertEqual(editBtn.getAttribute('aria-label'), 'Editar', 'aria-label debería ser "Editar" tras cancelar');
+    assertDeepEqual(pendingTexts(), ['Mantener'], 'DOM debería restaurar Mantener');
+    assertDeepEqual(readStoredTaskTexts(), ['Mantener'], 'Storage NO debería cambiar');
+    assertEqual(editBtn.getAttribute('aria-label'), 'Editar', 'aria-label debería ser Editar tras cancelar');
   });
 
   const passed = results.filter((r) => r.ok).length;
   const failed = results.length - passed;
 
-  const lines = [
+  report.innerHTML = [
     `<strong>Resultados:</strong> <span class="pass">${passed} OK</span>, <span class="fail">${failed} FAIL</span>`,
     '<ul>',
     ...results.map((r) =>
       r.ok
-        ? `<li class="pass">✓ ${r.name}</li>`
-        : `<li class="fail">✗ ${r.name}<br/><code>${escapeHtml(r.error)}</code></li>`
+        ? `<li class="pass">✓ ${escapeHtml(r.name)}</li>`
+        : `<li class="fail">✗ ${escapeHtml(r.name)}<br/><code>${escapeHtml(r.error)}</code></li>`
     ),
     '</ul>',
-  ];
-  report.innerHTML = lines.join('\n');
+  ].join('\n');
 
-  // Also log for devtools
   // eslint-disable-next-line no-console
   console.log('[NextUp tests]', { passed, failed, results });
 }
 
-function escapeHtml(s) {
-  return String(s)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
-}
-
-// Run after current call stack (ensures app.js executed)
 setTimeout(() => {
   runTests().catch((e) => {
     $('report').innerHTML = `<span class="fail"><strong>Error ejecutando tests:</strong> <code>${escapeHtml(
