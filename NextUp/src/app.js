@@ -16,6 +16,32 @@ const input = document.getElementById('entrada');
 const taskList = document.getElementById('elemento');
 const searchInput = document.getElementById('search');
 
+// ===== Mensaje "sin resultados" (búsqueda) =====
+// Se crea dinámicamente (sin tocar el HTML) y se muestra cuando el filtro no devuelve coincidencias.
+let noResultsEl = document.getElementById('no-results');
+
+/**
+ * Asegura que existe el elemento de UI `#no-results` justo debajo del buscador.
+ * Si ya existe, lo reutiliza.
+ * @returns {HTMLElement|null}
+ */
+function ensureNoResultsElement() {
+  if (noResultsEl) return noResultsEl;
+  if (!searchInput) return null;
+
+  const el = document.createElement('div');
+  el.id = 'no-results';
+  el.textContent = 'No hay ninguna tarea con ese nombre';
+  el.setAttribute('role', 'status');
+  el.setAttribute('aria-live', 'polite');
+  el.className = 'mt-3 text-sm text-slate-600 dark:text-slate-300';
+  el.style.display = 'none';
+
+  searchInput.insertAdjacentElement('afterend', el);
+  noResultsEl = el;
+  return el;
+}
+
 // ===== Estado en memoria (fuente de verdad) =====
 // Guardamos cada tarea como objeto: { id: string, text: string }.
 /** @type {Task[]} */
@@ -353,15 +379,24 @@ function loadTasks() {
 function filterTasks() {
   const searchText = searchInput.value.toLowerCase();
   const items = taskList.getElementsByTagName('li');
+  const messageEl = ensureNoResultsElement();
+  let matchCount = 0;
 
   Array.from(items).forEach(li => {
     const span = li.querySelector('span');
     const editInput = li.querySelector('.edit-input');
     const taskTextRaw = (span?.textContent ?? editInput?.value ?? '').toLowerCase();
     const matches = taskTextRaw.includes(searchText);
+    if (matches) matchCount += 1;
     li.classList.toggle('hidden', !matches);
     li.style.display = matches ? 'flex' : 'none';
   });
+
+  if (messageEl) {
+    const hasQuery = searchText.trim().length > 0;
+    const show = hasQuery && matchCount === 0;
+    messageEl.style.display = show ? 'block' : 'none';
+  }
 }
 
 // ===== Inicialización =====

@@ -137,6 +137,42 @@ async function runTests() {
     assertDeepEqual(visibleLiTexts(), ['Beta'], 'Filtro debería encontrar Beta');
   });
 
+  await test('filterTasks: muestra mensaje si no hay coincidencias', async () => {
+    resetUI();
+    localStorage.setItem('tasks', JSON.stringify(['Alpha', 'Beta']));
+    window.loadTasks();
+
+    // Caso: texto buscado sin coincidencias -> debe aparecer el mensaje.
+    $('search').value = 'zzz';
+    window.filterTasks();
+
+    const msg = document.getElementById('no-results');
+    assert(msg, 'Debería crear #no-results al filtrar');
+    assertEqual(
+      window.getComputedStyle(msg).display !== 'none',
+      true,
+      'El mensaje debería mostrarse cuando no hay coincidencias'
+    );
+
+    // Caso: hay coincidencias -> debe ocultarse.
+    $('search').value = 'alp';
+    window.filterTasks();
+    assertEqual(
+      window.getComputedStyle(msg).display === 'none',
+      true,
+      'El mensaje debería ocultarse cuando hay coincidencias'
+    );
+
+    // Caso: búsqueda vacía -> debe ocultarse.
+    $('search').value = '';
+    window.filterTasks();
+    assertEqual(
+      window.getComputedStyle(msg).display === 'none',
+      true,
+      'El mensaje debería ocultarse cuando no hay texto de búsqueda'
+    );
+  });
+
   await test('delete: click en .delete-btn elimina del DOM y actualiza storage', async () => {
     resetUI();
     localStorage.setItem('tasks', JSON.stringify(['X', 'Y']));
