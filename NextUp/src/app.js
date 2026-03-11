@@ -48,7 +48,7 @@ form.addEventListener('submit', function(event) {
 // Al escribir en el buscador: filtramos la lista en tiempo real.
 searchInput.addEventListener('input', filterTasks);
 
-// Delegación de eventos: un solo listener en la <ul> para detectar clicks en botones de borrar.
+// Delegación de eventos: un solo listener en la <ul> para manejar acciones por tarea.
 taskList.addEventListener('click', function(event) {
   // Buscamos si el click ocurrió (o burbujeó) desde un elemento con clase `.delete-btn`.
   const deleteBtn = event.target.closest('.delete-btn');
@@ -67,6 +67,39 @@ taskList.addEventListener('click', function(event) {
     // Animación de salida
     li.classList.add('opacity-0', 'translate-x-4');
     setTimeout(() => li.remove(), 200);
+    return;
+  }
+
+  // Botón de editar/guardar: alterna entre modo lectura (span) y modo edición (input).
+  const editBtn = event.target.closest('.edit-btn');
+  if (editBtn) {
+    const li = editBtn.closest('li');
+    if (!li) return;
+
+    if (li.dataset.editing === 'true') {
+      finishEdit(li);
+    } else {
+      startEdit(li);
+    }
+  }
+});
+
+// Atajos de teclado durante la edición:
+// - Enter: guardar cambios
+// - Escape: cancelar y restaurar el texto anterior
+taskList.addEventListener('keydown', function(event) {
+  const inputEl = event.target.closest('.edit-input');
+  if (!inputEl) return;
+
+  const li = inputEl.closest('li');
+  if (!li) return;
+
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    finishEdit(li);
+  } else if (event.key === 'Escape') {
+    event.preventDefault();
+    cancelEdit(li);
   }
 });
 
@@ -108,9 +141,28 @@ function createTaskElement(taskOrText) {
   span.textContent = task.text;
   span.classList.add('flex-1', 'text-inherit');
 
-  // Montamos la estructura final: [botón borrar] + [texto]
+  // Botón para editar el texto de la tarea (sin afectar el flujo actual de crear/borrar).
+  const editBtn = document.createElement('button');
+  editBtn.type = 'button';
+  editBtn.classList.add(
+    'edit-btn',
+    'px-2', 'py-1',
+    'text-sm',
+    'rounded-md',
+    'border', 'border-primario',
+    'text-primario',
+    'hover:bg-[#E3F2FD]',
+    'dark:border-slate-500',
+    'dark:text-slate-100',
+    'dark:hover:bg-slate-600',
+    'transition'
+  );
+  editBtn.textContent = 'Editar';
+
+  // Montamos la estructura final: [botón borrar] + [texto] + [editar]
   li.appendChild(deleteBtn);
   li.appendChild(span);
+  li.appendChild(editBtn);
 
   // Insertamos en la lista
   taskList.appendChild(li);
@@ -121,6 +173,108 @@ function createTaskElement(taskOrText) {
   }, 10);
 
   return li;
+}
+
+// ===== Editar tareas =====
+/**
+ * Entra en modo edición:
+ * - Sustituye el <span> por un <input>
+ * - Guarda el texto original para poder cancelar (Escape)
+ * - Cambia el botón "Editar" a "Guardar"
+ * @param {HTMLLIElement} li
+ * @returns {void}
+ */
+function startEdit(li) {
+  const span = li.querySelector('span');
+  const editBtn = li.querySelector('.edit-btn');
+  if (!span || !editBtn) return;
+
+  li.dataset.editing = 'true';
+  li.dataset.originalText = span.textContent ?? '';
+
+  const inputEl = document.createElement('input');
+  inputEl.type = 'text';
+  inputEl.value = li.dataset.originalText;
+  inputEl.classList.add(
+    'edit-input',
+    'flex-1',
+    'px-3', 'py-2',
+    'border-2', 'border-primario',
+    'rounded-lg',
+    'bg-white', 'dark:bg-slate-700',
+    'text-texto', 'dark:text-slate-100',
+    'shadow-sm',
+    'focus:border-texto',
+    'transition'
+  );
+
+  span.replaceWith(inputEl);
+  editBtn.textContent = 'Guardar';
+  inputEl.focus();
+  inputEl.setSelectionRange(inputEl.value.length, inputEl.value.length);
+}
+
+/**
+ * Finaliza la edición:
+ * - Valida y normaliza (trim)
+ * - Actualiza el array `tasks` (fuente de verdad) y persiste en `localStorage`
+ * - Restaura el <span> y vuelve el botón a "Editar"
+ * @param {HTMLLIElement} li
+ * @returns {void}
+ */
+function finishEdit(li) {
+  const inputEl = li.querySelector('.edit-input');
+  const editBtn = li.querySelector('.edit-btn');
+  if (!inputEl || !editBtn) return;
+
+  const newText = inputEl.value.trim();
+  if (newText === '') {
+    cancelEdit(li);
+    return;
+  }
+
+  const id = li.dataset.id;
+  if (id) {
+    const idx = tasks.findIndex(t => t.id === id);
+    if (idx !== -1) tasks[idx].text = newText;
+  }
+  saveTasks();
+
+  const span = document.createElement('span');
+  span.textContent = newText;
+  span.classList.add('flex-1', 'text-inherit');
+
+  inputEl.replaceWith(span);
+  editBtn.textContent = 'Editar';
+  li.dataset.editing = 'false';
+  delete li.dataset.originalText;
+
+  // Mantiene el filtro consistente si hay texto de búsqueda.
+  filterTasks();
+}
+
+/**
+ * Cancela la edición:
+ * - Restaura el texto original
+ * - Vuelve a modo lectura sin persistir cambios
+ * @param {HTMLLIElement} li
+ * @returns {void}
+ */
+function cancelEdit(li) {
+  const inputEl = li.querySelector('.edit-input');
+  const editBtn = li.querySelector('.edit-btn');
+  if (!inputEl || !editBtn) return;
+
+  const originalText = li.dataset.originalText ?? inputEl.value;
+
+  const span = document.createElement('span');
+  span.textContent = originalText;
+  span.classList.add('flex-1', 'text-inherit');
+
+  inputEl.replaceWith(span);
+  editBtn.textContent = 'Editar';
+  li.dataset.editing = 'false';
+  delete li.dataset.originalText;
 }
 
 // ===== Crear y añadir una tarea nueva desde el input =====
@@ -185,8 +339,10 @@ function filterTasks() {
   const items = taskList.getElementsByTagName('li');
 
   Array.from(items).forEach(li => {
-    const taskText = li.querySelector('span').textContent.toLowerCase();
-    const matches = taskText.includes(searchText);
+    const span = li.querySelector('span');
+    const editInput = li.querySelector('.edit-input');
+    const taskTextRaw = (span?.textContent ?? editInput?.value ?? '').toLowerCase();
+    const matches = taskTextRaw.includes(searchText);
     li.classList.toggle('hidden', !matches);
     li.style.display = matches ? 'flex' : 'none';
   });
