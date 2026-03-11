@@ -96,6 +96,18 @@
         margin-top: 8px;
       }
 
+      /* Modal mover tarea: espaciado del panel (flex + gap no están en Tailwind build) */
+      #move-task-modal-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem; /* un poco menos que antes para parecerse más al modal de renombrar */
+      }
+      /* Separación entre lista de proyectos y botones (sin línea visible) */
+      #move-task-modal-actions {
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+      }
+
     </style>
 
     <!-- Título que aparece en la pestaña del navegador -->
@@ -273,11 +285,22 @@
     <!-- Modal centrado: mover tarea -->
     <div id="move-task-modal" class="fixed inset-0 hidden z-50">
         <div id="move-task-modal-backdrop" class="absolute inset-0 bg-black/40"></div>
-        <div id="move-task-modal-panel" class="relative z-10 w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 sm:p-8 mx-4">
-            <h2 class="text-2xl font-serif text-primario dark:text-blue-300 mb-2">Mover tarea</h2>
-            <div id="move-task-modal-taskname" class="text-sm text-slate-600 dark:text-slate-300 mb-4 truncate">—</div>
-            <div id="move-task-modal-list" class="space-y-2 mb-5 max-h-[45vh] overflow-auto"></div>
-            <div class="flex items-center justify-end gap-3">
+        <div
+            id="move-task-modal-panel"
+            class="relative z-10 w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-8 sm:p-10 mx-4 flex flex-col gap-6"
+        >
+            <h2 class="text-2xl font-serif text-primario dark:text-blue-300">Mover tarea</h2>
+            <div
+                id="move-task-modal-taskname"
+                class="text-sm text-slate-600 dark:text-slate-300 truncate"
+            >
+                —
+            </div>
+            <div
+                id="move-task-modal-list"
+                class="space-y-2 max-h-[45vh] overflow-auto"
+            ></div>
+            <div id="move-task-modal-actions" class="flex items-center justify-end gap-3">
                 <button id="move-task-modal-cancel" type="button" class="px-4 py-2 border-2 border-primario rounded-lg dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow hover:bg-slate-200 dark:hover:bg-slate-700 transition">
                     Cancelar
                 </button>
