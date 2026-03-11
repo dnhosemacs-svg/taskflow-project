@@ -73,6 +73,16 @@
         margin-left: auto;
       }
 
+      /* Espaciado consistente dentro del popup de crear/renombrar proyecto */
+      #project-modal-form {
+        display: flex;
+        flex-direction: column;
+        row-gap: 14px; /* separación entre input y bloque de botones */
+      }
+      #project-modal-form > div {
+        margin-top: 4px; /* pequeño respiro extra sobre los botones */
+      }
+
       /* Separación uniforme entre bloques dentro del popup de proyectos */
       #project-drawer-content {
         display: flex;
@@ -235,9 +245,9 @@
     <div id="project-modal" class="fixed inset-0 hidden z-50">
         <div id="project-modal-backdrop" class="absolute inset-0 bg-black/40"></div>
         <div class="absolute inset-0 flex items-center justify-center p-4">
-            <div id="project-modal-panel" class="w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 sm:p-8">
-                <h2 id="project-modal-title" class="text-2xl font-serif text-primario dark:text-blue-300 mb-4">Crear proyecto</h2>
-                <form id="project-modal-form" class="flex flex-col gap-4">
+            <div id="project-modal-panel" class="w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-8 sm:p-10 flex flex-col gap-6">
+                <h2 id="project-modal-title" class="text-2xl font-serif text-primario dark:text-blue-300">Crear proyecto</h2>
+                <form id="project-modal-form" class="flex flex-col gap-5">
                     <input
                         id="project-modal-input"
                         type="text"
@@ -247,7 +257,7 @@
                                text-texto dark:text-slate-100 shadow-sm focus:border-texto focus:bg-[#E3F2FD]
                                dark:focus:bg-slate-600 transition"
                     >
-                    <div class="flex items-center justify-end gap-3">
+                    <div class="flex items-center justify-end gap-3 mt-2">
                         <button id="project-modal-cancel" type="button" class="px-4 py-2 border-2 border-primario rounded-lg dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow hover:bg-slate-200 dark:hover:bg-slate-700 transition">
                             Cancelar
                         </button>
