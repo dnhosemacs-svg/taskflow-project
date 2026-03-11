@@ -46,7 +46,7 @@ function liTexts() {
 function visibleLiTexts() {
   return Array.from($('elemento').querySelectorAll('li'))
     .filter((li) => window.getComputedStyle(li).display !== 'none')
-    .map((li) => li.querySelector('span')?.textContent ?? '');
+    .map((li) => li.querySelector('span')?.textContent ?? li.querySelector('input.edit-input')?.value ?? '');
 }
 
 function resetUI() {
@@ -103,6 +103,12 @@ async function runTests() {
     const li = $('elemento').querySelector('li');
     assert(li, 'No se creó el <li>');
     assert(li.querySelector('button.delete-btn'), 'Falta botón .delete-btn');
+    const editBtn = li.querySelector('button.edit-btn');
+    assert(editBtn, 'Falta botón .edit-btn');
+    const svg = editBtn.querySelector('svg');
+    assert(svg, 'Falta el SVG del botón editar');
+    assertEqual(svg.getAttribute('viewBox'), '0 0 16 16', 'El SVG no parece ser pencil-fill (viewBox)');
+    assertEqual(svg.getAttribute('fill'), 'currentColor', 'El SVG debería usar currentColor');
     const span = li.querySelector('span');
     assert(span, 'Falta <span> del texto');
     assertEqual(span.textContent, 'Tarea A', 'Texto incorrecto');
@@ -147,6 +153,55 @@ async function runTests() {
 
     assertDeepEqual(liTexts(), ['Y'], 'Debería quedar solo Y en el DOM');
     assertDeepEqual(readStoredTasks(), ['Y'], 'Storage debería actualizarse a ["Y"]');
+  });
+
+  await test('edit: click en .edit-btn entra en edición y Enter guarda en DOM + storage', async () => {
+    resetUI();
+    localStorage.setItem('tasks', JSON.stringify(['Original']));
+    window.loadTasks();
+
+    const li = $('elemento').querySelector('li');
+    assert(li, 'No hay <li>');
+    const editBtn = li.querySelector('button.edit-btn');
+    assert(editBtn, 'No hay botón edit');
+    assertEqual(editBtn.getAttribute('aria-label'), 'Editar', 'aria-label inicial debería ser "Editar"');
+
+    editBtn.click();
+    const input = li.querySelector('input.edit-input');
+    assert(input, 'No entró en modo edición (falta input.edit-input)');
+    assertEqual(editBtn.getAttribute('aria-label'), 'Guardar', 'aria-label debería cambiar a "Guardar"');
+
+    input.value = 'Cambiado';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+    assertEqual(li.querySelector('input.edit-input'), null, 'Debería salir de edición (no debería quedar input)');
+    assertDeepEqual(liTexts(), ['Cambiado'], 'El DOM debería mostrar el texto editado');
+    assertDeepEqual(readStoredTasks(), ['Cambiado'], 'Storage debería persistir el texto editado');
+    assertEqual(editBtn.getAttribute('aria-label'), 'Editar', 'aria-label debería volver a "Editar"');
+  });
+
+  await test('edit: Escape cancela (restaura DOM) y NO persiste cambios', async () => {
+    resetUI();
+    localStorage.setItem('tasks', JSON.stringify(['Mantener']));
+    window.loadTasks();
+
+    const li = $('elemento').querySelector('li');
+    assert(li, 'No hay <li>');
+    const editBtn = li.querySelector('button.edit-btn');
+    assert(editBtn, 'No hay botón edit');
+
+    editBtn.click();
+    const input = li.querySelector('input.edit-input');
+    assert(input, 'No entró en modo edición');
+
+    input.value = 'No guardar';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+    assertEqual(li.querySelector('input.edit-input'), null, 'Debería salir de edición tras Escape');
+    assertDeepEqual(liTexts(), ['Mantener'], 'Debería restaurar el texto original en el DOM');
+    assertDeepEqual(readStoredTasks(), ['Mantener'], 'Storage NO debería cambiar al cancelar');
+    assertEqual(editBtn.getAttribute('aria-label'), 'Editar', 'aria-label debería ser "Editar" tras cancelar');
   });
 
   const passed = results.filter((r) => r.ok).length;

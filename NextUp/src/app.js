@@ -146,18 +146,31 @@ function createTaskElement(taskOrText) {
   editBtn.type = 'button';
   editBtn.classList.add(
     'edit-btn',
-    'px-2', 'py-1',
-    'text-sm',
-    'rounded-md',
-    'border', 'border-primario',
+    'cursor-pointer',
+    'w-[25px]', 'h-[25px]',
+    'flex', 'items-center', 'justify-center',
     'text-primario',
-    'hover:bg-[#E3F2FD]',
-    'dark:border-slate-500',
-    'dark:text-slate-100',
-    'dark:hover:bg-slate-600',
-    'transition'
+    'dark:text-blue-300'
   );
-  editBtn.textContent = 'Editar';
+  editBtn.setAttribute('aria-label', 'Editar');
+  editBtn.title = 'Editar';
+
+  // Icono SVG (Bootstrap) - pencil-fill
+  const pencilSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  pencilSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  pencilSvg.setAttribute('viewBox', '0 0 16 16');
+  pencilSvg.setAttribute('fill', 'currentColor');
+  pencilSvg.classList.add('w-[18px]', 'h-[18px]');
+
+  const pencilPath1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  pencilPath1.setAttribute('d', 'M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708z');
+
+  const pencilPath2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  pencilPath2.setAttribute('d', 'M.5 13.5V16h2.5l7.373-7.373-2.5-2.5zM11.207 2.5l2.5 2.5-1 1-2.5-2.5z');
+
+  pencilSvg.appendChild(pencilPath1);
+  pencilSvg.appendChild(pencilPath2);
+  editBtn.appendChild(pencilSvg);
 
   // Montamos la estructura final: [botón borrar] + [texto] + [editar]
   li.appendChild(deleteBtn);
@@ -209,7 +222,8 @@ function startEdit(li) {
   );
 
   span.replaceWith(inputEl);
-  editBtn.textContent = 'Guardar';
+  editBtn.setAttribute('aria-label', 'Guardar');
+  editBtn.title = 'Guardar';
   inputEl.focus();
   inputEl.setSelectionRange(inputEl.value.length, inputEl.value.length);
 }
@@ -245,7 +259,8 @@ function finishEdit(li) {
   span.classList.add('flex-1', 'text-inherit');
 
   inputEl.replaceWith(span);
-  editBtn.textContent = 'Editar';
+  editBtn.setAttribute('aria-label', 'Editar');
+  editBtn.title = 'Editar';
   li.dataset.editing = 'false';
   delete li.dataset.originalText;
 
@@ -272,7 +287,8 @@ function cancelEdit(li) {
   span.classList.add('flex-1', 'text-inherit');
 
   inputEl.replaceWith(span);
-  editBtn.textContent = 'Editar';
+  editBtn.setAttribute('aria-label', 'Editar');
+  editBtn.title = 'Editar';
   li.dataset.editing = 'false';
   delete li.dataset.originalText;
 }
