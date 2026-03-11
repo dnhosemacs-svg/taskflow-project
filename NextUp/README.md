@@ -72,3 +72,23 @@ Hay un mini “test runner” en `tests/test-runner.html` que carga `src/app.js`
 - Abre `tests/test-runner.html` en el navegador.  
 - Si el navegador bloquea `localStorage` al abrir archivos locales, sirve la carpeta `NextUp` con un servidor estático y abre `tests/test-runner.html` desde `http://`.
 
+---
+
+## Ejemplos de uso (pendiente de completar)
+
+En mi caso he estado usando NextUp de manera funcional en mi navegador, tengo un proyecto creado con cada punto de la actividad a realizar y dentro de cada punto tengo las tareas que se piden, marcandolas según las hago.
+
+Esta página puede venir bien para un sin fin de cosas, administrar el hopgar con tareas de limpieza, listas de la compra o tareas pendientes.
+
+### Ejemplo 1: crear tu primer proyecto y tarea
+
+-Con abrir la página se nos crea por defecto "Mi proyecto" donde podemos añadir tareas directamente.
+-Además podemos renombrar y crear tantos proyectos como queramos, cada uno con sus respectivas tareas.
+
+### Ejemplo 2: organizar tareas por proyectos
+
+-Al tener varios proyectos es posible que o bien estos compartan una tarea o bien nos equivoquemos al añadir una tarea al proyecto equivocado y para estos caso hay implementado un boton mediante el cual seleccionamos cualquier proyecto de los que tengamos ya creados y moverla con un click.
+
+### Ejemplo 3: usar la búsqueda y las tareas completadas
+
+-Tenemos la posibilidad de buscar tareas por texto, en el caso de tener una lista mas extensa de tareas puede ser un problema encontrar la tarea concreta, además se ha tenido en cuenta que se puede completar una tarea por error y po rello el buscador encuentra tanto las tareas por completar como las completadas para poder revertir el error.
