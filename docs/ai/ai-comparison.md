@@ -1,4 +1,5 @@
 Documento para comparar ChatGPT con Claude en donde mostrare un prompt y a continuación mi comparación de las respuestas recibidas por ambas IA.
+También se propondrá, tres pequeños errores intencionales en javascript y se analizará la respuesta de amas ia.
 
 Explicaciones de aspectos técnicos:
 
@@ -37,11 +38,13 @@ El objetivo es que la página se vea bien y sea fácil de usar en cualquier disp
 
         Ejemplo básico:
 
+```css
         @media (max-width: 768px) {
             body {
                 background-color: lightgray;
             }
         }
+```
 
     3. Imágenes y elementos flexibles
 
@@ -49,10 +52,12 @@ El objetivo es que la página se vea bien y sea fácil de usar en cualquier disp
 
         Ejemplo:
 
+```css
         img {
             max-width: 100%;
             height: auto;
         }
+```
 
     4. Diseño Mobile First
 
@@ -91,12 +96,14 @@ Principios fundamentales
 
     Son reglas CSS que aplican estilos diferentes según las características del dispositivo, principalmente el ancho de la pantalla. Por ejemplo:
 
+```css
         /* Estilos para pantallas pequeñas (móvil) */
         @media (max-width: 768px) {
             .menu {
                 display: none;
             }
         }
+```
 
 Enfoques de diseño
 Existen dos filosofías principales a la hora de implementarlo:
@@ -140,9 +147,11 @@ Existen dos formas principales de usar o implementar una API:
 
     Ejemplo en JavaScript:
 
+```js
     fetch("https://api.ejemplo.com/usuarios")
         .then(response => response.json())
         .then(data => console.log(data));
+```
 
 2. Crear tu propia API
 
@@ -150,6 +159,7 @@ Existen dos formas principales de usar o implementar una API:
 
     Ejemplo básico con Node.js y Express:
 
+```js
     const express = require("express");
     const app = express();
 
@@ -160,6 +170,7 @@ Existen dos formas principales de usar o implementar una API:
     app.listen(3000, () => {
         console.log("API funcionando en puerto 3000");
     });
+```
 
 En resumen:
 Una API permite que distintas aplicaciones se comuniquen entre sí mediante solicitudes y respuestas, normalmente usando HTTP. Se puede consumir una API existente o crear una propia con un servidor que exponga endpoints.
@@ -177,13 +188,16 @@ Hay dos perspectivas: consumir una API existente o crear la tuya propia.
     La mayoría de APIs web funcionan con el protocolo REST y se consultan mediante peticiones HTTP. 
     Ejemplo en JavaScript:
 
+```js
     fetch("https://api.ejemplo.com/usuarios")
         .then(response => response.json())
         .then(data => console.log(data));
+```
 
 2. Crear tu propia API
     Puedes construir una API con distintos lenguajes. Un ejemplo sencillo con Node.js + Express:
 
+```js
     const express = require("express");
     const app = express();
 
@@ -193,6 +207,7 @@ Hay dos perspectivas: consumir una API existente o crear la tuya propia.
     });
 
     app.listen(3000, () => console.log("API corriendo en el puerto 3000"));
+```
 
 Conceptos clave a tener en cuenta
 
@@ -225,11 +240,13 @@ Cuando el navegador carga un archivo HTML:
 
     Ejemplo de estructura:
 
+```text
     html
     ├── head
     └── body
         ├── h1
         └── p
+```
 
 ¿Cómo se usa el DOM?
 
@@ -237,7 +254,9 @@ Cuando el navegador carga un archivo HTML:
 
     JavaScript puede seleccionar elementos del HTML.
 
+```js
     const titulo = document.getElementById("titulo");
+```
 
     Otros métodos comunes:
 
@@ -249,19 +268,28 @@ Cuando el navegador carga un archivo HTML:
 2. Modificar contenido
 
     Se puede cambiar el contenido de un elemento.
+
+```js
     document.getElementById("titulo").textContent = "Nuevo título";
+```
 
 3. Cambiar estilos
 
     También se pueden modificar estilos CSS.
+
+```js
     document.getElementById("titulo").style.color = "blue";
+```
 
 4. Manejar eventos
 
     El DOM permite responder a acciones del usuario.
+
+```js
     document.getElementById("boton").addEventListener("click", function() {
         alert("Has hecho clic");
     });
+```
 
 En resumen:
 El DOM es la estructura que representa el HTML de una página como un árbol de objetos, permitiendo que JavaScript acceda y manipule los elementos de la página para hacerla interactiva.
@@ -269,6 +297,7 @@ El DOM es la estructura que representa el HTML de una página como un árbol de 
 Respuesta Claude: ¿Qué es el DOM?
 El DOM (Document Object Model o Modelo de Objetos del Documento) es una representación estructurada en forma de árbol de todos los elementos de una página HTML. Cuando el navegador carga una página web, convierte el HTML en este modelo, permitiendo que JavaScript pueda leer y manipular el contenido, la estructura y los estilos de la página de forma dinámica.
 
+```text
     document
     └── html
         ├── head
@@ -278,10 +307,12 @@ El DOM (Document Object Model o Modelo de Objetos del Documento) es una represen
             ├── p
             └── div
                 └── button
+```
 
 ¿Cómo se usa el DOM?
 1. Seleccionar elementos
 
+```js
     // Por ID
     const titulo = document.getElementById("titulo");
 
@@ -291,6 +322,7 @@ El DOM (Document Object Model o Modelo de Objetos del Documento) es una represen
     // Con selectores CSS (el más usado hoy en día)
     const boton = document.querySelector(".btn");
     const todosLosBotones = document.querySelectorAll(".btn");
+```
 
 2. Modificar contenido y estilos
 
@@ -313,6 +345,7 @@ El DOM (Document Object Model o Modelo de Objetos del Documento) es una represen
 
 3. Crear y eliminar elementos
 
+```js
     // Crear un nuevo elemento
     const nuevoParrafo = document.createElement("p");
     nuevoParrafo.textContent = "Este párrafo fue creado con JavaScript";
@@ -323,10 +356,12 @@ El DOM (Document Object Model o Modelo de Objetos del Documento) es una represen
     // Eliminar un elemento
     const elementoViejo = document.querySelector(".obsoleto");
     elementoViejo.remove();
+```
 
 4. Escuchar eventos
     Una de las funcionalidades más importantes del DOM es reaccionar a las acciones del usuario.
 
+```js
     const boton = document.querySelector("#miBoton");
 
     boton.addEventListener("click", () => {
@@ -336,9 +371,11 @@ El DOM (Document Object Model o Modelo de Objetos del Documento) es una represen
     // Otros eventos comunes
     input.addEventListener("keyup", (e) => console.log(e.target.value));
     formulario.addEventListener("submit", (e) => e.preventDefault());
+```
 
 Ejemplo práctico completo
 
+```html
 <button id="btn">Agregar elemento</button>
 <ul id="lista"></ul>
 
@@ -353,6 +390,7 @@ Ejemplo práctico completo
     lista.appendChild(nuevoItem);
   });
 </script>
+```
 
 Resumen rápido
 
@@ -383,12 +421,14 @@ Donde:
 
 Función en JavaScript
 
+```js
     function celsiusAFahrenheit(celsius) {
         return (celsius * 9/5) + 32;
     }
 
     // Ejemplo de uso
     console.log(celsiusAFahrenheit(25)); // 77
+```
 
 Explicación rápida:
 
@@ -398,6 +438,7 @@ Explicación rápida:
 
 Respuesta Claude: Aquí tienes la función:
 
+```js
     function celsiusAFahrenheit(celsius) {
         return (celsius * 9/5) + 32;
     }
@@ -406,12 +447,15 @@ Respuesta Claude: Aquí tienes la función:
     console.log(celsiusAFahrenheit(0));   // 32°F
     console.log(celsiusAFahrenheit(100)); // 212°F
     console.log(celsiusAFahrenheit(37));  // 98.6°F
+```
 
 La fórmula es (°C × 9/5) + 32. Si también necesitas la conversión inversa:
 
+```js
     function fahrenheitACelsius(fahrenheit) {
         return (fahrenheit - 32) * 5/9;
     }
+```
 
 Comparación de código: En este caso el código en sí es igual, claude me ha dado un ejemplo para hacer la conversión al reves y chatgpt ha explicado mejor el funcionamiento de la función.
 ----------------------------------------------------------------------------------------------------------------------
@@ -421,6 +465,7 @@ Prompt: Necesito una función para buscar palabras dentro de un texto y que me d
 
 Respuesta de chapGPT: Función para buscar y contar palabras
 
+```js
     function buscarPalabra(texto, palabra) {
         const palabras = texto.toLowerCase().split(" ");
         const objetivo = palabra.toLowerCase();
@@ -443,6 +488,7 @@ Respuesta de chapGPT: Función para buscar y contar palabras
     // Ejemplo
     const texto = "hola mundo hola javascript hola programador";
     console.log(buscarPalabra(texto, "hola"));
+```
 
 Cómo funciona
 
@@ -458,6 +504,7 @@ Si no → indica que no existe.
 
 Respuesta Claude: Aquí tienes la función:
 
+```js
     function buscarPalabra(texto, palabra) {
         const regex = new RegExp(`\\b${palabra}\\b`, "gi");
         const coincidencias = texto.match(regex);
@@ -475,6 +522,7 @@ Respuesta Claude: Aquí tienes la función:
     console.log(buscarPalabra(texto, "gato"));   // encontrada 2 veces
     console.log(buscarPalabra(texto, "gatos"));  // encontrada 1 vez
     console.log(buscarPalabra(texto, "perro"));  // no encontrada
+```
 
 Algunas notas sobre la función:
 
@@ -484,6 +532,7 @@ Algunas notas sobre la función:
 
 Si quieres ignorar esa distinción entre singular/plural o variantes, puedes quitar los delimitadores \b y buscar coincidencias parciales:
 
+```js
     function buscarPalabraParcial(texto, palabra) {
         const regex = new RegExp(palabra, "gi");
         const coincidencias = texto.match(regex);
@@ -496,6 +545,7 @@ Si quieres ignorar esa distinción entre singular/plural o variantes, puedes qui
     }
 
     console.log(buscarPalabraParcial(texto, "gato")); // encontrada 3 veces (gato, gato, gatos)
+```
 
 Comparación de código: En este caso me ha gustado más la opción de Claude, ya que ha pensado más en cómo buscar las palabras y ha propuesto una alternativa para distinguir singular y plural y la función que arroja tiene menos líneas haciendo practicamente lo mismo.
 Claude ha usado más la entrada del texto y así con solo un if hace todo el trabajo.
@@ -508,6 +558,7 @@ Respuesta ChatGPT: Puedes hacerlo fácilmente con HTML y JavaScript usando un bo
 
 Ejemplo sencillo
 
+```html
 <!DOCTYPE html>
 <html>
 <head>
@@ -525,6 +576,7 @@ function mostrarSorpresa() {
 
 </body>
 </html>
+```
 
 Cómo funciona 
 
@@ -536,6 +588,7 @@ Cuando el usuario pulsa el botón aparecerá la ventana emergente con:¡Sorpresa
 
 Respuesta Claude: Aquí tienes el código completo:
 
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -554,9 +607,11 @@ Respuesta Claude: Aquí tienes el código completo:
 
 </body>
 </html>
+```
 
 Si prefieres un pop-up más estilizado en lugar del alert() nativo del navegador, aquí tienes una versión con CSS:
 
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -626,7 +681,312 @@ Si prefieres un pop-up más estilizado en lugar del alert() nativo del navegador
 
 </body>
 </html>
+```
 
 La diferencia entre ambas opciones es que alert() es rápido y sencillo pero usa el estilo predeterminado del navegador, mientras que la versión con CSS te da control total sobre el diseño y la experiencia del usuario.
 
 Comparación de código: En este caso el código inicial es muy similar, como siempre Claude hace otra alternativa mejorando en este caso el aspecto y por otra parte el chatgpt ha dado una pequeña explicación de lo que hace el código.
+
+----------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------
+
+Funciones con errores:
+
+Prompt: Analiza porque no funciona la siguiente función:
+
+```js
+function esPar(n) {
+  if (n % 2 === 0) {
+    return true;
+  }
+  return falso;
+}
+```
+
+Respuesta ChatGPT: La función tiene un error que impide que funcione correctamente en JavaScript. Vamos a analizarlo. 
+
+Código original
+
+```js
+function esPar(n) {
+  if (n % 2 === 0) {
+    return true;
+  }
+  return falso;
+}
+```
+
+Problema
+
+En la última línea aparece:
+
+`return falso;`
+
+En JavaScript el valor booleano correcto es: true o false
+
+Pero en el código se usa falso, que no existe en JavaScript.
+
+Esto produce un error como:
+ReferenceError: falso is not defined
+
+Corrección
+
+```js
+function esPar(n) {
+  if (n % 2 === 0) {
+    return true;
+  }
+  return false;
+}
+```
+
+Versión más simple (mejor práctica)
+
+Se puede simplificar mucho la función:
+
+```js
+function esPar(n) {
+  return n % 2 === 0;
+}
+```
+
+Porque la expresión n % 2 === 0 ya devuelve true o false.
+
+Ejemplo de uso
+
+```js
+esPar(4); // true
+esPar(7); // false
+```
+
+Resumen
+
+    Error: uso de falso en lugar de false.
+    JavaScript es sensible a nombres exactos.
+    La función puede simplificarse eliminando el if.
+
+Respues ta Claude: La función tiene 1 único error: un identificador mal escrito.
+Error — falso no está definido
+
+```js
+return falso; //  ReferenceError: falso is not defined
+```
+
+falso no existe en JavaScript. El booleano correcto es false (en inglés):
+
+```js
+return false;
+```
+
+Función corregida
+
+```js
+function esPar(n) {
+  if (n % 2 === 0) {
+    return true;
+  }
+  return false;
+}
+```
+
+Simplificación opcional: toda la función se puede reducir a una sola línea, ya que la condición ya evalúa a un booleano directamente:
+
+```js
+const esPar = n => n % 2 === 0;
+```
+
+Comparación personal: Respecto a código ambas ia van muy bien y lo han resuelto de manera identica, como es costumbre chatgpt explica más y claude va mas al grano, aunque ambas dan la solución y una simplificación del código.
+----------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------
+
+Prompt: Analiza porque no funciona la siguiente función:
+
+```js
+function restar(a, b) {
+  return a - d;
+}
+```
+
+Respuesta ChatGPT: Problema 
+
+Dentro de la función se usan los parámetros: a y b
+Pero en el return aparece d, que no está definido en la función ni como variable global.
+
+Por eso JavaScript produce un error similar a:
+
+ReferenceError: d is not defined
+
+Corrección 
+
+Debes restar usando el parámetro correcto (b):
+
+```js
+function restar(a, b) {
+  return a - b;
+}
+```
+
+Ejemplo de uso
+
+```js
+console.log(restar(10, 3)); // 7
+```
+
+Resumen 
+
+a y b son los parámetros de la función.
+Se intentó usar d, que no existe.
+Cambiar d por b soluciona el problema.
+
+Respues ta Claude: La función tiene un error de variable no declarada. En el return, se usa d en lugar de b:
+
+```js
+function restar(a, b) {
+  return a - d; //  'd' no existe, debería ser 'b'
+}
+```
+
+Corrección:
+
+```js
+function restar(a, b) {
+  return a - b; // 
+}
+```
+
+El parámetro recibido es b, pero al hacer la resta se referencia d, que no está definida en ningún lugar, lo que causaría un ReferenceError: d is not defined en tiempo de ejecución.
+
+Comparación personal: Claude va mas al grano en mi opinión, explica simplemente el eror y lo soluciona, chatgpt explica lo mismo de forma algo más extensa.
+----------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------
+
+Prompt: Analiza porque no funciona la siguiente función:
+
+```js
+    function obtenerEstadisticas(lista) {
+        const total = lista.reduce((acc, num) => acc + num);
+        const promedio = total / lista.lenght;
+
+        return {
+            total,
+            promedio,
+            max: Math.max(lista),
+            min: Math.min(lista)
+        };
+    }
+```
+
+Respuesta ChatGPT: 
+1. Error tipográfico en length
+
+En esta línea:
+`const promedio = total / lista.lenght;`
+
+Hay un error de escritura: lenght 
+
+La propiedad correcta de los arrays en JavaScript es:
+`lista.length`
+
+Si no se corrige, lista.lenght será undefined, lo que provoca que el promedio sea NaN.
+
+2. Uso incorrecto de Math.max() y Math.min()
+
+En el código aparece:
+`max: Math.max(lista),`
+`min: Math.min(lista)`
+
+El problema es que Math.max y Math.min no aceptan arrays directamente, sino una lista de números.
+Esto produce NaN.
+
+La forma correcta es usar el spread operator (...):
+
+```js
+Math.max(...lista)
+Math.min(...lista)
+```
+
+3. reduce sin valor inicial (posible error)
+
+Esta línea:
+`const total = lista.reduce((acc, num) => acc + num);`
+
+Puede fallar si lista está vacía. Es buena práctica añadir un valor inicial:
+`const total = lista.reduce((acc, num) => acc + num, 0);`
+
+Versión corregida
+
+```js
+function obtenerEstadisticas(lista) {
+  const total = lista.reduce((acc, num) => acc + num, 0);
+  const promedio = total / lista.length;
+
+  return {
+    total,
+    promedio,
+    max: Math.max(...lista),
+    min: Math.min(...lista)
+  };
+}
+```
+
+Ahora la función:
+    calcula correctamente el total
+    calcula el promedio
+    obtiene el máximo
+    obtiene el mínimo
+
+Respues ta Claude:
+Error 1 — Typo en lista.lenght
+
+```js
+const promedio = total / lista.lenght; //  'lenght' no existe → NaN
+```
+
+lenght no es una propiedad válida, devuelve undefined y la división produce NaN.
+
+```js
+const promedio = total / lista.length;
+```
+
+Error 2 — Math.max no acepta arrays
+
+```js
+max: Math.max(lista) //  → NaN
+```
+
+Math.max espera valores separados por coma, no un array. Se necesita el operador spread:
+
+```js
+max: Math.max(...lista)
+```
+
+Error 3 — Math.min no acepta arrays
+
+```js
+min: Math.min(lista) //  → NaN
+```
+
+Mismo problema que Math.max:
+
+```js
+min: Math.min(...lista)
+```
+
+Función corregida
+
+```js
+function obtenerEstadisticas(lista) {
+  const total = lista.reduce((acc, num) => acc + num);
+  const promedio = total / lista.length;       //  typo corregido
+  return {
+    total,
+    promedio,
+    max: Math.max(...lista),                   //  spread operator
+    min: Math.min(...lista)                    //  spread operator
+  };
+}
+```
+
+Nota adicional: sería recomendable manejar el caso en que lista llegue vacía, ya que reduce sin valor inicial lanzaría un TypeError y Math.max(...[]) devolvería -Infinity.
+
+Comparación personal: chatgpt organiza el problema en puntos de una lista y los va explicando para luego dar solución, siento que claude va directamente línea a línea de código y te arroja la solución directamente.
