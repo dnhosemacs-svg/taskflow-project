@@ -1,33 +1,74 @@
-# Taskflow-project
+# Taskflow-project · NextUp
 
-NextUp es una aplicación web sencilla que permite escribir tareas que se mostrarán en forma de lista que se quedarán en memoria aunque se cierre la página y se podrán eliminar con un check al terminarlas.
+NextUp es una aplicación web para gestionar tareas de forma sencilla pero potente.  
+Permite crear tareas organizadas por proyectos, buscarlas, marcarlas como completadas (con opción de deshacer) y trabajar en modo claro u oscuro, manteniendo el estado en `localStorage` aunque cierres la página.
 
 ---
 
 ## Características principales
 
--Visualización de lista de tareas.
--Cada tarea tendrá un boton con forma de check para eliminarla.
--Adicionalmente tentremos una barra de búsqueda para que se muestren solo las tareas que coincidan con la búsqueda.
--Dichas tareas se guardan en la memoria interna mediante un script que trabaja a través del DOM.
+- **Lista de tareas por proyecto**:  
+  - Las tareas se agrupan por proyecto.  
+  - Puedes cambiar de proyecto desde la barra lateral (escritorio) o desde el panel de proyectos (móvil).
 
-## Tecnologías utilizadas
-- HTML5 para la estructura.
-- CSS3 para los estilos y el diseño.
-- JavaScript para la captura de texto, el listado de tareas y la eliminaciónm de las mismas.
+- **Gestión de proyectos**:  
+  - Crear nuevos proyectos.  
+  - Renombrar proyectos mediante un modal centrado.  
+  - Eliminar proyectos (se eliminan también sus tareas asociadas).  
+  - Mover tareas entre proyectos mediante un modal de selección.
+
+- **Añadir y editar tareas**:  
+  - Campo de texto para añadir nuevas tareas al proyecto activo.  
+  - Edición en línea de una tarea (icono de lápiz):  
+    - `Enter` guarda los cambios y actualiza `localStorage`.  
+    - `Escape` cancela y restaura el texto original.
+
+- **Completar tareas (soft delete)**:  
+  - El botón de eliminar mueve la tarea a una sección de **“Tareas completadas”** en la parte inferior.  
+  - Las tareas completadas se muestran tachadas y con un botón de “volver a pendientes”.  
+  - Esta sección solo existe durante la sesión actual (no se persiste en `localStorage`), pero las pendientes sí se actualizan.
+
+- **Búsqueda en tiempo real**:  
+  - Barra de búsqueda que filtra tanto tareas pendientes como completadas del proyecto activo.  
+  - Muestra un mensaje de “No hay ninguna tarea con ese nombre” si no hay coincidencias.
+
+- **Persistencia en `localStorage` (estado v2)**:  
+  - Estado versionado que guarda proyectos, tareas y el proyecto activo.  
+  - Migración automática desde el formato antiguo que solo guardaba una lista de tareas simples.
+
+- **Modo claro / modo oscuro**:  
+  - Botón fijo para alternar el tema (claro/oscuro) con texto e icono reactivos.  
+  - El tema se recuerda en `localStorage` (`theme`) y respeta `prefers-color-scheme` la primera vez.  
+  - Se basa en la clase `dark` sobre `<html>` para activar estilos `dark:*` (Tailwind).
 
 ---
 
-## Tests rápidos (antes de refactorizar)
+## Tecnologías utilizadas
 
-Hay un mini “test runner” en `tests/test-runner.html` que carga `app.js` con un DOM mínimo y valida:
-- Añadir tareas (incluye trim y persistencia)
-- Cargar desde `localStorage`
-- Filtrar por búsqueda
-- Eliminar tareas (incluye el `setTimeout` de la animación)
+- **HTML5** para la estructura de la aplicación y los modales.  
+- **CSS3 + Tailwind (compilado a `styles/output.css`)** para el diseño responsivo y el modo oscuro.  
+- **JavaScript** para:
+  - Captura de texto y creación de tareas.  
+  - Gestión de proyectos y movimiento de tareas entre proyectos.  
+  - Persistencia en `localStorage` con un estado versionado.  
+  - Búsqueda en tiempo real y manejo de la sección de completadas.  
+  - Gestión del tema (modo claro/oscuro) desde `src/theme.js`.
+
+---
+
+## Tests rápidos (después del refactor)
+
+Hay un mini “test runner” en `tests/test-runner.html` que carga `src/app.js` con un DOM mínimo y valida la funcionalidad principal de NextUp:
+
+- Añadir tareas (incluye `trim` y persistencia).  
+- Cargar desde `localStorage` (incluida la migración desde el formato legacy).  
+- Filtrar por búsqueda en la lista de tareas.  
+- Completar tareas (soft delete) y restaurarlas a pendientes.  
+- Edición en línea de tareas (guardar/cancelar).  
+- Gestión de proyectos: filtrado por proyecto activo, renombrar, borrar y mover tareas entre proyectos mediante modal.
 
 ### Cómo ejecutarlo
 
-- Abre `tests/test-runner.html` en el navegador.
+- Abre `tests/test-runner.html` en el navegador.  
 - Si el navegador bloquea `localStorage` al abrir archivos locales, sirve la carpeta `NextUp` con un servidor estático y abre `tests/test-runner.html` desde `http://`.
 

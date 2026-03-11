@@ -1,4 +1,4 @@
-/* NextUp (browser) - Test harness reescrito desde cero */
+/* NextUp (browser) - Test harness de integración (DOM + localStorage) */
 
 function $(id) {
   const el = document.getElementById(id);
@@ -111,6 +111,8 @@ function resetState() {
   // Tras limpiar el DOM, la sección debe quedar oculta.
   assertCompletedSectionHidden(true, 'reset');
 }
+
+// ===== Suite de pruebas End-to-End (DOM + localStorage) =====
 
 async function runTests() {
   const report = $('report');

@@ -2,6 +2,7 @@
   NextUp - Lógica principal (tareas)
   - Conecta el HTML con JavaScript usando IDs.
   - Permite: añadir tareas, eliminarlas, guardarlas en localStorage y buscarlas.
+  - Requiere que existan en el DOM los IDs definidos en index.html / test-runner (formulario, entrada, elemento, search, proyectos, etc.).
 */
 
 /**
@@ -965,6 +966,11 @@ function loadTasks() {
   setActiveProjectId(activeProjectId);
 }
 
+/**
+ * Garantiza que siempre exista al menos un proyecto y que `activeProjectId`
+ * apunte a un proyecto válido.
+ * @returns {void}
+ */
 function ensureAtLeastOneProject() {
   // La app siempre necesita un proyecto activo. Si no hay ninguno:
   // - creamos uno por defecto y lo activamos
@@ -978,6 +984,12 @@ function ensureAtLeastOneProject() {
   }
 }
 
+/**
+ * Renderiza la lista de proyectos (desktop + móvil) y sincroniza:
+ * - marcado de proyecto activo
+ * - botones de renombrar/eliminar
+ * @returns {void}
+ */
 function renderProjects() {
   // Eliminar proyecto implica borrar todas sus tareas:
   // - pendientes (persistidas)
@@ -1108,6 +1120,11 @@ function renderProjects() {
   renderInto(projectListMobileEl);
 }
 
+/**
+ * Crea un proyecto nuevo a través del modal centrado,
+ * lo persiste y lo marca como activo.
+ * @returns {void}
+ */
 function addProjectFromPrompt() {
   // Crear proyecto: abrimos modal centrado, creamos, persistimos y activamos.
   openProjectNameModal({ title: 'Crear proyecto', submitLabel: 'Crear', initialValue: '' }).then((trimmed) => {
@@ -1120,6 +1137,11 @@ function addProjectFromPrompt() {
   });
 }
 
+/**
+ * Renderiza las tareas pendientes y completadas del proyecto activo
+ * y aplica visibilidad correcta (completadas + filtro de búsqueda).
+ * @returns {void}
+ */
 function renderTasksForActiveProject() {
   // Render “por proyecto”: la UI muestra solo las tareas del proyecto activo.
   taskList.innerHTML = '';
