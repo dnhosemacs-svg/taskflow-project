@@ -10,6 +10,84 @@
     <!-- Estilos específicos del toggle de tema -->
     <link rel="stylesheet" href="styles/theme-toggle.css">
 
+    <!-- Ajustes puntuales de layout (sin depender de Tailwind build) -->
+    <style>
+      /* Centrar el panel de proyectos cuando está visible */
+      #project-drawer { display: none; }
+      #project-drawer:not(.hidden) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Fallback robusto: centrar contenido del popup Proyectos */
+      #project-drawer-backdrop {
+        position: absolute;
+        inset: 0;
+      }
+      #project-drawer-content {
+        position: relative;
+        z-index: 1;
+        width: min(92vw, 420px);
+        max-height: 85vh;
+        overflow: auto;
+      }
+
+      /* Modal mover tarea (centrado) */
+      #move-task-modal { display: none; }
+      #move-task-modal:not(.hidden) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* En móvil, ocultar botón de tema mientras haya un popup abierto */
+      @media (max-width: 768px) {
+        .has-popup #theme-toggle {
+          display: none;
+        }
+      }
+
+      /* Sombra suave para los paneles de popup (independiente de Tailwind) */
+      #project-drawer-content,
+      #project-modal-panel,
+      #move-task-modal-panel {
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.30);
+      }
+
+      /* En modo oscuro, hacer la sombra un poco más marcada */
+      .dark #project-drawer-content,
+      .dark #project-modal-panel,
+      .dark #move-task-modal-panel {
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.70);
+      }
+
+      /* Alinear "Cerrar" a la derecha (fallback sin Tailwind) */
+      #project-drawer-header-row {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        gap: 12px;
+      }
+      #project-drawer-close {
+        margin-left: auto;
+      }
+
+      /* Separación uniforme entre bloques dentro del popup de proyectos */
+      #project-drawer-content {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      /* Separación vertical entre proyectos en las listas (desktop y móvil) */
+      #project-list li + li,
+      #project-list-mobile li + li {
+        margin-top: 8px;
+      }
+
+    </style>
+
     <!-- Título que aparece en la pestaña del navegador -->
     <title>NextUp</title>
 </head>
@@ -32,8 +110,8 @@
         TEST DARK MODE
     </div> -->
 
-    <!-- Contenedor principal: agrupa buscador, formulario de alta y lista de tareas -->
-    <section class="bg-white dark:bg-slate-800 max-w-xl w-full mt-10 p-8 rounded-xl shadow-lg">
+    <!-- Contenedor principal: proyectos + tareas (responsive, ancho contenido como antes) -->
+    <section class="bg-white dark:bg-slate-800 max-w-xl w-full mt-10 p-8 sm:p-10 rounded-xl shadow-lg">
 
         <!--
             Botón de tema (modo claro/oscuro)
@@ -60,55 +138,145 @@
         ></span>
     </button>
 
-        <!-- Buscador: filtra tareas (la lógica suele estar en `app.js`) -->
-        <h2 class="text-2xl font-serif text-primario dark:text-blue-300 mb-3">Barra de búsqueda</h2>
-        <!-- `id="search"`: lo usa el JS para leer lo que escribe el usuario y filtrar -->
-        <input 
-            type="text" 
-            id="search" 
-            placeholder="Buscar..."
-            class="w-full px-4 py-2 border-2 border-primario rounded-lg bg-white dark:bg-slate-700 
-                   text-texto dark:text-slate-100 shadow-sm focus:border-texto focus:bg-[#E3F2FD] 
-                   dark:focus:bg-slate-600 transition mb-8"
-        >
+        <!-- Layout: sidebar proyectos (md+) + contenido tareas -->
+        <div class="flex flex-col md:flex-row gap-6">
+            <!-- Sidebar proyectos (visible en escritorio) -->
+            <aside class="hidden md:block md:w-64">
+                <div class="flex items-center justify-between gap-3 mb-3">
+                    <h2 class="text-2xl font-serif text-primario dark:text-blue-300">Proyectos</h2>
+                    <button id="project-add" type="button" class="px-3 py-1 border-2 border-primario rounded-lg dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow hover:bg-slate-200 dark:hover:bg-slate-700 transition ml-1">
+                        + Proyecto
+                    </button>
+                </div>
+                <ul id="project-list" class="space-y-2 p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700"></ul>
+            </aside>
 
-        <!-- Formulario para añadir una tarea nueva -->
-        <h2 class="text-2xl font-serif text-primario dark:text-blue-300 mb-3">Añadir tarea</h2>
+            <!-- Contenido principal -->
+            <main class="flex-1 min-w-0">
+                <!-- Barra superior (móvil): botón de proyectos + nombre proyecto activo -->
+                <div class="md:hidden flex items-center justify-between gap-3 mb-6">
+                    <button id="project-drawer-open" type="button" class="px-3 py-2 border-2 border-primario rounded-lg dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                        Proyectos
+                    </button>
+                    <div class="min-w-0 text-right">
+                        <div id="active-project-name" class="font-semibold truncate">—</div>
+                    </div>
+                </div>
 
-        <!--
-            `id="formulario"`: el JS intercepta el submit para crear la tarea sin recargar la página.
-            El layout `flex` coloca input + botón en una misma fila.
-        -->
-        <form id="formulario" class="flex items-center gap-3 mb-8">
-            <!-- `id="entrada"`: campo donde se escribe el texto de la tarea -->
-            <input 
-                type="text" 
-                id="entrada" 
-                placeholder="Nueva tarea..." 
-                required
-                class="flex-1 px-4 py-2 border-2 border-primario rounded-lg bg-white dark:bg-slate-700 
-                       text-texto dark:text-slate-100 shadow-sm focus:border-texto focus:bg-[#E3F2FD] 
-                       dark:focus:bg-slate-600 transition"
-            >
+                <!-- Buscador: filtra tareas (la lógica suele estar en `app.js`) -->
+                <h2 class="text-2xl font-serif text-primario dark:text-blue-300 mb-3">Barra de búsqueda</h2>
+                <input 
+                    type="text" 
+                    id="search" 
+                    placeholder="Buscar..."
+                    class="w-full px-4 py-2 border-2 border-primario rounded-lg bg-white dark:bg-slate-700 
+                           text-texto dark:text-slate-100 shadow-sm focus:border-texto focus:bg-[#E3F2FD] 
+                           dark:focus:bg-slate-600 transition mb-8"
+                >
 
-            <!-- Botón de envío del formulario: al hacer click dispara el submit -->
-            <button type="submit" class="w-[30px] h-[30px] bg-primario rounded-full flex items-center justify-center shadow-md hover:bg-blue-900 transition">
-                <!-- Icono del botón (imagen local). El alt mejora accesibilidad. -->
-                <img src="Imagenes/BotonAñadir.png" alt="Añadir" class="w-[22px] h-[22px] rounded-full">
-            </button>
-        </form>
+                <!-- Formulario para añadir una tarea nueva -->
+                <h2 class="text-2xl font-serif text-primario dark:text-blue-300 mb-3">Añadir tarea</h2>
+                <form id="formulario" class="flex items-center gap-3 mb-8">
+                    <input 
+                        type="text" 
+                        id="entrada" 
+                        placeholder="Nueva tarea..." 
+                        required
+                        class="flex-1 px-4 py-2 border-2 border-primario rounded-lg bg-white dark:bg-slate-700 
+                               text-texto dark:text-slate-100 shadow-sm focus:border-texto focus:bg-[#E3F2FD] 
+                               dark:focus:bg-slate-600 transition"
+                    >
+                    <button type="submit" class="w-[30px] h-[30px] bg-primario rounded-full flex items-center justify-center shadow-md hover:bg-blue-900 transition">
+                        <img src="Imagenes/BotonAñadir.png" alt="Añadir" class="w-[22px] h-[22px] rounded-full">
+                    </button>
+                </form>
 
-        <!-- Lista donde se renderizan las tareas pendientes -->
-        <h2 class="text-2xl font-serif text-primario dark:text-blue-300 mb-3">Tareas pendientes</h2>
-        <!-- `id="elemento"`: el JS inserta aquí los <li> de cada tarea -->
-        <ul id="elemento" class="space-y-3 p-3 rounded-lg bg-white dark:bg-slate-800 text-[#111827] dark:text-[#F9FAFB]"></ul>
+                <!-- Lista donde se renderizan las tareas pendientes -->
+                <div class="flex items-center justify-between gap-3 mb-3">
+                    <h2 class="text-2xl font-serif text-primario dark:text-blue-300">Tareas pendientes</h2>
+                    <div class="hidden md:block min-w-0 text-right">
+                        <div class="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-300">Proyecto</div>
+                        <div id="active-project-name-desktop" class="font-semibold truncate">—</div>
+                    </div>
+                </div>
+                <ul id="elemento" class="space-y-3 p-3 rounded-lg bg-white dark:bg-slate-800 text-[#111827] dark:text-[#F9FAFB]"></ul>
 
-        <!-- Lista donde se renderizan las tareas eliminadas (solo durante la sesión) -->
-        <!-- Se muestra/oculta automáticamente desde `src/app.js` según haya tareas completadas -->
-        <h2 id="completed-heading" class="text-2xl font-serif text-primario dark:text-blue-300 mt-8 mb-3">Tareas completadas</h2>
-        <ul id="completed" class="space-y-3 p-3 rounded-lg bg-white dark:bg-slate-800 text-[#111827] dark:text-[#F9FAFB]"></ul>
+                <!-- Completadas (solo sesión) -->
+                <h2 id="completed-heading" class="text-2xl font-serif text-primario dark:text-blue-300 mt-8 mb-3">Tareas completadas</h2>
+                <ul id="completed" class="space-y-3 p-3 rounded-lg bg-white dark:bg-slate-800 text-[#111827] dark:text-[#F9FAFB]"></ul>
+            </main>
+        </div>
 
     </section>
+
+    <!-- Drawer de proyectos (móvil) -->
+    <div id="project-drawer" class="fixed inset-0 hidden z-40">
+        <div id="project-drawer-backdrop" class="absolute inset-0 bg-black/40"></div>
+            <div id="project-drawer-content" class="bg-white dark:bg-slate-800 shadow-2xl rounded-xl p-8 sm:p-10 flex flex-col">
+                <div id="project-drawer-header-row" class="flex items-center mb-6 w-full">
+                    <h2 class="text-2xl font-serif text-primario dark:text-blue-300">Proyectos</h2>
+                    <button
+                        id="project-drawer-close"
+                        type="button"
+                        class="ml-auto text-2xl leading-none font-semibold text-primario dark:text-blue-300 hover:opacity-80 transition"
+                        aria-label="Cerrar"
+                    >
+                        ×
+                    </button>
+                </div>
+                <button id="project-add-mobile" type="button" class="mb-4 px-3 py-2 border-2 border-primario rounded-lg dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                    + Proyecto
+                </button>
+                <ul id="project-list-mobile" class="space-y-2 p-3 rounded-lg bg-white dark:bg-slate-800 overflow-auto"></ul>
+        </div>
+    </div>
+
+    <!-- Modal centrado: crear proyecto -->
+    <div id="project-modal" class="fixed inset-0 hidden z-50">
+        <div id="project-modal-backdrop" class="absolute inset-0 bg-black/40"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div id="project-modal-panel" class="w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 sm:p-8">
+                <h2 id="project-modal-title" class="text-2xl font-serif text-primario dark:text-blue-300 mb-4">Crear proyecto</h2>
+                <form id="project-modal-form" class="flex flex-col gap-4">
+                    <input
+                        id="project-modal-input"
+                        type="text"
+                        autocomplete="off"
+                        placeholder="Nombre del proyecto..."
+                        class="w-full px-4 py-2 border-2 border-primario rounded-lg bg-white dark:bg-slate-700
+                               text-texto dark:text-slate-100 shadow-sm focus:border-texto focus:bg-[#E3F2FD]
+                               dark:focus:bg-slate-600 transition"
+                    >
+                    <div class="flex items-center justify-end gap-3">
+                        <button id="project-modal-cancel" type="button" class="px-4 py-2 border-2 border-primario rounded-lg dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                            Cancelar
+                        </button>
+                        <button id="project-modal-submit" type="submit" class="px-4 py-2 bg-primario text-white rounded-lg shadow hover:bg-blue-900 transition">
+                            Crear
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal centrado: mover tarea -->
+    <div id="move-task-modal" class="fixed inset-0 hidden z-50">
+        <div id="move-task-modal-backdrop" class="absolute inset-0 bg-black/40"></div>
+        <div id="move-task-modal-panel" class="relative z-10 w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 sm:p-8 mx-4">
+            <h2 class="text-2xl font-serif text-primario dark:text-blue-300 mb-2">Mover tarea</h2>
+            <div id="move-task-modal-taskname" class="text-sm text-slate-600 dark:text-slate-300 mb-4 truncate">—</div>
+            <div id="move-task-modal-list" class="space-y-2 mb-5 max-h-[45vh] overflow-auto"></div>
+            <div class="flex items-center justify-end gap-3">
+                <button id="move-task-modal-cancel" type="button" class="px-4 py-2 border-2 border-primario rounded-lg dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                    Cancelar
+                </button>
+                <button id="move-task-modal-confirm" type="button" class="px-4 py-2 bg-primario text-white rounded-lg shadow hover:bg-blue-900 transition">
+                    Mover
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Script principal de la app (tareas, renderizado, eventos, etc.) -->
     <script src="src/theme.js" defer></script>

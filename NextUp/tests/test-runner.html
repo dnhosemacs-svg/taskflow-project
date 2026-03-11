@@ -29,9 +29,46 @@
       <input id="search" type="text" placeholder="Buscar..." />
       <form id="formulario" class="row">
         <input id="entrada" type="text" placeholder="Nueva tarea..." />
+        
         <button type="submit">Añadir</button>
       </form>
     </section>
+
+    <!-- DOM mínimo para Proyectos (nuevas funcionalidades) -->
+    <section class="row" aria-label="Proyectos NextUp">
+      <button id="project-add" type="button">+ Proyecto</button>
+      <ul id="project-list" aria-label="Lista de proyectos (desktop)"></ul>
+      <button id="project-drawer-open" type="button">Proyectos</button>
+      <div id="active-project-name"></div>
+      <div id="active-project-name-desktop"></div>
+    </section>
+
+    <div id="project-drawer" class="hidden">
+      <div id="project-drawer-backdrop"></div>
+      <button id="project-drawer-close" type="button">Cerrar</button>
+      <button id="project-add-mobile" type="button">+ Proyecto</button>
+      <ul id="project-list-mobile" aria-label="Lista de proyectos (mobile)"></ul>
+    </div>
+
+    <!-- Modal de proyecto (crear/renombrar) -->
+    <div id="project-modal" class="hidden">
+      <div id="project-modal-backdrop"></div>
+      <h2 id="project-modal-title">Proyecto</h2>
+      <form id="project-modal-form">
+        <input id="project-modal-input" type="text" />
+        <button id="project-modal-cancel" type="button">Cancelar</button>
+        <button id="project-modal-submit" type="submit">Guardar</button>
+      </form>
+    </div>
+
+    <!-- Modal mover tarea -->
+    <div id="move-task-modal" class="hidden">
+      <div id="move-task-modal-backdrop"></div>
+      <div id="move-task-modal-taskname"></div>
+      <div id="move-task-modal-list"></div>
+      <button id="move-task-modal-cancel" type="button">Cancelar</button>
+      <button id="move-task-modal-confirm" type="button">Mover</button>
+    </div>
     <ul id="elemento" aria-label="Lista de tareas"></ul>
     <h2 id="completed-heading">Tareas completadas</h2>
     <ul id="completed" aria-label="Lista de tareas completadas"></ul>
@@ -41,6 +78,7 @@
     <script>
       // Aislar pruebas: empezar siempre desde el mismo estado.
       localStorage.removeItem('tasks');
+      localStorage.removeItem('nextup_state_v2');
     </script>
     <script src="../src/app.js?v=1"></script>
     <script src="./tests.js?v=1"></script>

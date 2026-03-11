@@ -33,14 +33,25 @@ function assertDeepEqual(actual, expected, message) {
   if (a !== e) throw new Error(message || `Expected ${e} but got ${a}`);
 }
 
+function readState() {
+  const raw = localStorage.getItem('nextup_state_v2');
+  if (!raw) return null;
+  return JSON.parse(raw);
+}
+
+function writeState(state) {
+  localStorage.setItem('nextup_state_v2', JSON.stringify(state));
+}
+
 function readStoredTaskTexts() {
-  const raw = localStorage.getItem('tasks');
+  const raw = localStorage.getItem('nextup_state_v2');
   if (!raw) return null;
   const parsed = JSON.parse(raw);
-  if (!Array.isArray(parsed)) return null;
-  if (parsed.length === 0) return [];
-  if (typeof parsed[0] === 'string') return parsed;
-  return parsed.map((t) => t.text);
+  if (!parsed || typeof parsed !== 'object') return null;
+  const tasks = Array.isArray(parsed.tasks) ? parsed.tasks : null;
+  const activeProjectId = parsed.ui?.activeProjectId ?? null;
+  if (!tasks || !activeProjectId) return [];
+  return tasks.filter((t) => t.projectId === activeProjectId).map((t) => t.text);
 }
 
 function pendingLis() {
@@ -79,11 +90,16 @@ function assertCompletedSectionHidden(expectedHidden, context) {
 function resetState() {
   // Limpieza del estado persistido
   localStorage.removeItem('tasks');
+  localStorage.removeItem('nextup_state_v2');
 
   // Limpieza del DOM
   $('entrada').value = '';
   $('search').value = '';
   $('elemento').innerHTML = '';
+  const projectList = document.getElementById('project-list');
+  if (projectList) projectList.innerHTML = '';
+  const projectListMobile = document.getElementById('project-list-mobile');
+  if (projectListMobile) projectListMobile.innerHTML = '';
   const completed = document.getElementById('completed');
   if (completed) completed.innerHTML = '';
 
@@ -126,7 +142,9 @@ async function runTests() {
     $('entrada').value = '   ';
     window.addTask();
     assertEqual(pendingLis().length, 0, 'No debería crear <li>');
-    assertEqual(localStorage.getItem('tasks'), null, 'No debería guardar tasks');
+    // La app siempre inicializa al menos un proyecto y persiste el state v2.
+    // Lo importante aquí es que NO se cree ninguna tarea.
+    assertDeepEqual(readStoredTaskTexts(), [], 'No debería persistir tareas');
   });
 
   await test('addTask: añade en DOM y persiste', async () => {
@@ -153,6 +171,8 @@ async function runTests() {
 
   await test('loadTasks: renderiza desde localStorage (strings antiguos)', async () => {
     resetState();
+    // Forzar migración legacy: si existe el state v2, la app no leerá `tasks`.
+    localStorage.removeItem('nextup_state_v2');
     localStorage.setItem('tasks', JSON.stringify(['Uno', 'Dos']));
     $('elemento').innerHTML = '';
     window.loadTasks();
@@ -161,6 +181,7 @@ async function runTests() {
 
   await test('filterTasks: filtra pendientes', async () => {
     resetState();
+    localStorage.removeItem('nextup_state_v2');
     localStorage.setItem('tasks', JSON.stringify(['Alpha', 'Beta', 'Alpine']));
     $('elemento').innerHTML = '';
     window.loadTasks();
@@ -172,6 +193,7 @@ async function runTests() {
 
   await test('soft-delete: delete mueve a completadas, tacha y actualiza storage', async () => {
     resetState();
+    localStorage.removeItem('nextup_state_v2');
     localStorage.setItem('tasks', JSON.stringify(['X', 'Y']));
     $('elemento').innerHTML = '';
     window.loadTasks();
@@ -202,6 +224,7 @@ async function runTests() {
 
   await test('restore: vuelve a pendientes y re-persiste, ocultando completadas si queda vacío', async () => {
     resetState();
+    localStorage.removeItem('nextup_state_v2');
     localStorage.setItem('tasks', JSON.stringify(['X', 'Y']));
     $('elemento').innerHTML = '';
     window.loadTasks();
@@ -222,6 +245,7 @@ async function runTests() {
 
   await test('edit: Enter guarda en DOM + storage', async () => {
     resetState();
+    localStorage.removeItem('nextup_state_v2');
     localStorage.setItem('tasks', JSON.stringify(['Original']));
     $('elemento').innerHTML = '';
     window.loadTasks();
@@ -247,6 +271,7 @@ async function runTests() {
 
   await test('edit: Escape cancela y NO persiste', async () => {
     resetState();
+    localStorage.removeItem('nextup_state_v2');
     localStorage.setItem('tasks', JSON.stringify(['Mantener']));
     $('elemento').innerHTML = '';
     window.loadTasks();
@@ -266,6 +291,123 @@ async function runTests() {
     assertDeepEqual(pendingTexts(), ['Mantener'], 'DOM debería restaurar Mantener');
     assertDeepEqual(readStoredTaskTexts(), ['Mantener'], 'Storage NO debería cambiar');
     assertEqual(editBtn.getAttribute('aria-label'), 'Editar', 'aria-label debería ser Editar tras cancelar');
+  });
+
+  await test('projects: filtra tareas por proyecto activo', async () => {
+    resetState();
+    const p1 = { id: 'p1', name: 'A', createdAt: 1 };
+    const p2 = { id: 'p2', name: 'B', createdAt: 2 };
+    writeState({
+      schemaVersion: 2,
+      projects: [p1, p2],
+      tasks: [
+        { id: 't1', text: 'En A', projectId: 'p1' },
+        { id: 't2', text: 'En B', projectId: 'p2' },
+      ],
+      ui: { activeProjectId: 'p1' },
+    });
+
+    $('elemento').innerHTML = '';
+    window.loadTasks();
+    assertDeepEqual(pendingTexts(), ['En A'], 'Debe renderizar solo tareas del proyecto activo');
+
+    // Cambiar proyecto activo clicando en la lista de proyectos
+    const projectButtons = Array.from(document.querySelectorAll('#project-list button'));
+    assert(projectButtons.length >= 2, 'Debería renderizar botones de proyectos');
+    projectButtons.find((b) => b.textContent === 'B')?.click();
+    assertDeepEqual(pendingTexts(), ['En B'], 'Al cambiar de proyecto debe cambiar el render');
+  });
+
+  await test('projects: renombrar proyecto (modal) actualiza UI y storage', async () => {
+    resetState();
+    writeState({
+      schemaVersion: 2,
+      projects: [{ id: 'p1', name: 'Viejo', createdAt: 1 }],
+      tasks: [],
+      ui: { activeProjectId: 'p1' },
+    });
+    window.loadTasks();
+
+    const renameBtn = document.querySelector('#project-list button[aria-label="Renombrar"]');
+    assert(renameBtn, 'Falta botón Renombrar en la lista de proyectos');
+    renameBtn.click();
+
+    const modal = $('project-modal');
+    assert(!modal.classList.contains('hidden'), 'El modal de renombrar debería abrirse');
+    $('project-modal-input').value = 'Nuevo';
+    $('project-modal-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    // Esperar a que se resuelva la promesa del modal y se persista.
+    await sleep(0);
+
+    const st = readState();
+    assert(st, 'No hay state');
+    assertEqual(st.projects[0].name, 'Nuevo', 'El nombre del proyecto debería actualizarse en storage');
+
+    const projectBtn = Array.from(document.querySelectorAll('#project-list button')).find((b) => b.textContent === 'Nuevo');
+    assert(projectBtn, 'La UI debería mostrar el nombre nuevo');
+  });
+
+  await test('projects: borrar proyecto elimina sus tareas', async () => {
+    resetState();
+    writeState({
+      schemaVersion: 2,
+      projects: [
+        { id: 'p1', name: 'P1', createdAt: 1 },
+        { id: 'p2', name: 'P2', createdAt: 2 },
+      ],
+      tasks: [
+        { id: 'a', text: 'A', projectId: 'p1' },
+        { id: 'b', text: 'B', projectId: 'p2' },
+      ],
+      ui: { activeProjectId: 'p1' },
+    });
+    window.loadTasks();
+
+    const deleteBtn = document.querySelector('#project-list button[aria-label="Eliminar"]');
+    assert(deleteBtn, 'Falta botón Eliminar en la lista de proyectos');
+    deleteBtn.click();
+
+    const st = readState();
+    assert(st, 'No hay state');
+    assertEqual(st.projects.length, 1, 'Debería quedar 1 proyecto');
+    assertEqual(st.projects[0].id, 'p2', 'Debería quedar el proyecto p2');
+    assertDeepEqual(st.tasks.map((t) => t.text), ['B'], 'Debería borrar tareas del proyecto eliminado');
+  });
+
+  await test('tasks: mover tarea a otro proyecto (modal) actualiza storage y UI', async () => {
+    resetState();
+    writeState({
+      schemaVersion: 2,
+      projects: [
+        { id: 'p1', name: 'P1', createdAt: 1 },
+        { id: 'p2', name: 'P2', createdAt: 2 },
+      ],
+      tasks: [{ id: 't1', text: 'Moverme', projectId: 'p1' }],
+      ui: { activeProjectId: 'p1' },
+    });
+    window.loadTasks();
+    assertDeepEqual(pendingTexts(), ['Moverme'], 'Precondición: tarea visible en P1');
+
+    const li = pendingLis()[0];
+    const moveBtn = li.querySelector('button.move-btn');
+    assert(moveBtn, 'Falta botón mover');
+    moveBtn.click();
+
+    const modal = $('move-task-modal');
+    assert(!modal.classList.contains('hidden'), 'Modal mover tarea debería abrirse');
+
+    // seleccionar P2 dentro del modal
+    const optionButtons = Array.from($('move-task-modal-list').querySelectorAll('button'));
+    assert(optionButtons.length >= 1, 'Debe haber opciones de proyectos');
+    optionButtons.find((b) => b.textContent === 'P2')?.click();
+    $('move-task-modal-confirm').click();
+    // Esperar a que se resuelva el modal y a que termine la animación (200ms).
+    await sleep(260);
+
+    const st = readState();
+    assert(st, 'No hay state');
+    assertEqual(st.tasks[0].projectId, 'p2', 'La tarea debería moverse a p2 en storage');
+    assertEqual(pendingLis().length, 0, 'La tarea debería desaparecer del proyecto activo tras mover');
   });
 
   const passed = results.filter((r) => r.ok).length;

@@ -8,6 +8,14 @@
  * @typedef {Object} Task
  * @property {string} id
  * @property {string} text
+ * @property {string} projectId
+ */
+
+/**
+ * @typedef {Object} Project
+ * @property {string} id
+ * @property {string} name
+ * @property {number} createdAt
  */
 
 // ===== Referencias a elementos del DOM (IDs definidos en index.html) =====
@@ -15,6 +23,29 @@ const form = document.getElementById('formulario');
 const input = document.getElementById('entrada');
 const taskList = document.getElementById('elemento');
 const searchInput = document.getElementById('search');
+const activeProjectNameEl = document.getElementById('active-project-name');
+const activeProjectNameDesktopEl = document.getElementById('active-project-name-desktop');
+const projectListEl = document.getElementById('project-list');
+const projectListMobileEl = document.getElementById('project-list-mobile');
+const projectAddBtn = document.getElementById('project-add');
+const projectAddMobileBtn = document.getElementById('project-add-mobile');
+const projectDrawerEl = document.getElementById('project-drawer');
+const projectDrawerOpenBtn = document.getElementById('project-drawer-open');
+const projectDrawerCloseBtn = document.getElementById('project-drawer-close');
+const projectDrawerBackdropEl = document.getElementById('project-drawer-backdrop');
+const projectModalEl = document.getElementById('project-modal');
+const projectModalBackdropEl = document.getElementById('project-modal-backdrop');
+const projectModalForm = document.getElementById('project-modal-form');
+const projectModalInput = document.getElementById('project-modal-input');
+const projectModalCancelBtn = document.getElementById('project-modal-cancel');
+const projectModalTitleEl = document.getElementById('project-modal-title');
+const projectModalSubmitBtn = document.getElementById('project-modal-submit');
+const moveTaskModalEl = document.getElementById('move-task-modal');
+const moveTaskModalBackdropEl = document.getElementById('move-task-modal-backdrop');
+const moveTaskModalCancelBtn = document.getElementById('move-task-modal-cancel');
+const moveTaskModalConfirmBtn = document.getElementById('move-task-modal-confirm');
+const moveTaskModalListEl = document.getElementById('move-task-modal-list');
+const moveTaskModalTasknameEl = document.getElementById('move-task-modal-taskname');
 
 // Lista (UI) donde mostramos "Tareas completadas" de esta sesión.
 // Importante: estas tareas NO se guardan en localStorage, por lo que al recargar desaparecen.
@@ -51,14 +82,300 @@ function ensureNoResultsElement() {
 }
 
 // ===== Estado en memoria (fuente de verdad) =====
-// Guardamos cada tarea como objeto: { id: string, text: string }.
 /** @type {Task[]} */
 let tasks = [];
+
+/** @type {Project[]} */
+let projects = [];
+
+/** @type {string|null} */
+let activeProjectId = null;
 
 // Tareas "eliminadas" durante la sesión (NO se persisten).
 // Al recargar la página desaparecen, cumpliendo el comportamiento pedido.
 /** @type {Task[]} */
 let completedTasks = [];
+
+// Persistencia v2 (proyectos + tareas + UI).
+// - `STORAGE_KEY`: estado actual (versionado).
+// - `LEGACY_TASKS_KEY`: compatibilidad para migrar instalaciones antiguas que solo guardaban tareas.
+const STORAGE_KEY = 'nextup_state_v2';
+const LEGACY_TASKS_KEY = 'tasks';
+const SCHEMA_VERSION = 2;
+
+// Contador de popups visibles (drawer + modales).
+// Mientras sea > 0 añadimos la clase `has-popup` al <html> para poder
+// ajustar estilos específicos en móvil (por ejemplo, ocultar el botón
+// de cambio de tema cuando un popup está abierto).
+let openPopupCount = 0;
+
+function setPopupOpen(isOpening) {
+  const root = document.documentElement;
+  if (!root) return;
+  if (isOpening) {
+    openPopupCount += 1;
+  } else {
+    openPopupCount = Math.max(0, openPopupCount - 1);
+  }
+  if (openPopupCount > 0) {
+    root.classList.add('has-popup');
+  } else {
+    root.classList.remove('has-popup');
+  }
+}
+
+/**
+ * Crea el SVG del icono de lápiz usado en los botones de "editar".
+ * Se reutiliza tanto en las tareas como en la lista de proyectos para
+ * mantener la misma estética.
+ * @returns {SVGSVGElement}
+ */
+function createEditIconSvg() {
+  const pencilSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  pencilSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  pencilSvg.setAttribute('viewBox', '0 0 16 16');
+  pencilSvg.setAttribute('fill', 'currentColor');
+  pencilSvg.classList.add('w-[16px]', 'h-[16px]');
+
+  const pencilPath1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  pencilPath1.setAttribute('d', 'M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708z');
+
+  const pencilPath2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  pencilPath2.setAttribute('d', 'M.5 13.5V16h2.5l7.373-7.373-2.5-2.5zM11.207 2.5l2.5 2.5-1 1-2.5-2.5z');
+
+  pencilSvg.appendChild(pencilPath1);
+  pencilSvg.appendChild(pencilPath2);
+  return pencilSvg;
+}
+
+/**
+ * Genera un id único (best-effort) para entidades.
+ * @returns {string}
+ */
+function generateId() {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/**
+ * @param {string} name
+ * @returns {Project}
+ */
+function createProject(name) {
+  return { id: generateId(), name: name.trim(), createdAt: Date.now() };
+}
+
+/**
+ * @param {string} text
+ * @param {string} projectId
+ * @returns {Task}
+ */
+function createTask(text, projectId) {
+  return { id: generateId(), text, projectId };
+}
+
+/**
+ * @returns {Project|null}
+ */
+function getActiveProject() {
+  if (!activeProjectId) return null;
+  return projects.find(p => p.id === activeProjectId) ?? null;
+}
+
+/**
+ * @returns {Task[]}
+ */
+function getVisiblePendingTasks() {
+  if (!activeProjectId) return [];
+  return tasks.filter(t => t.projectId === activeProjectId);
+}
+
+/**
+ * @returns {Task[]}
+ */
+function getVisibleCompletedTasks() {
+  if (!activeProjectId) return [];
+  return completedTasks.filter(t => t.projectId === activeProjectId);
+}
+
+/**
+ * Cambia el proyecto activo y sincroniza:
+ * - etiqueta del nombre del proyecto (móvil y escritorio)
+ * - lista de proyectos (marcando activo)
+ * - listas de tareas (pendientes/completadas) filtradas por proyecto
+ * @param {string} id
+ * @returns {void}
+ */
+function setActiveProjectId(id) {
+  activeProjectId = id;
+  const p = getActiveProject();
+  const name = p?.name ?? '—';
+  if (activeProjectNameEl) activeProjectNameEl.textContent = name;
+  if (activeProjectNameDesktopEl) activeProjectNameDesktopEl.textContent = name;
+
+  renderProjects();
+  renderTasksForActiveProject();
+}
+
+// Popup de proyectos (móvil): abrir/cerrar. En escritorio se usa sidebar.
+function openProjectDrawer() {
+  if (!projectDrawerEl) return;
+  projectDrawerEl.classList.remove('hidden');
+  setPopupOpen(true);
+}
+
+function closeProjectDrawer() {
+  if (!projectDrawerEl) return;
+  projectDrawerEl.classList.add('hidden');
+  setPopupOpen(false);
+}
+
+/**
+ * Modal reutilizable para:
+ * - crear proyecto
+ * - renombrar proyecto
+ *
+ * Ventajas vs `prompt()`:
+ * - centrado, consistente y responsive
+ * - soporta cerrar por backdrop / Esc
+ * @returns {Promise<string|null>} nombre (trim) o null si canceló
+ */
+function openProjectNameModal(options) {
+  return new Promise((resolve) => {
+    if (!projectModalEl || !projectModalForm || !projectModalInput) {
+      const fallback = prompt(options?.title ?? 'Nombre del proyecto:', options?.initialValue ?? '');
+      resolve(fallback ? fallback.trim() : null);
+      return;
+    }
+
+    const cleanup = () => {
+      projectModalEl.classList.add('hidden');
+      projectModalForm.removeEventListener('submit', onSubmit);
+      projectModalCancelBtn?.removeEventListener('click', onCancel);
+      projectModalBackdropEl?.removeEventListener('click', onCancel);
+      window.removeEventListener('keydown', onKeyDown);
+      setPopupOpen(false);
+    };
+
+    const finish = (value) => {
+      cleanup();
+      resolve(value);
+    };
+
+    const onCancel = () => finish(null);
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') onCancel();
+    };
+
+    const onSubmit = (e) => {
+      e.preventDefault();
+      const name = projectModalInput.value.trim();
+      if (name === '') return;
+      finish(name);
+    };
+
+    if (projectModalTitleEl) projectModalTitleEl.textContent = options?.title ?? 'Proyecto';
+    if (projectModalSubmitBtn) projectModalSubmitBtn.textContent = options?.submitLabel ?? 'Guardar';
+    projectModalInput.value = options?.initialValue ?? '';
+    projectModalEl.classList.remove('hidden');
+    setPopupOpen(true);
+    setTimeout(() => projectModalInput.focus(), 0);
+    setTimeout(() => projectModalInput.select(), 0);
+
+    projectModalForm.addEventListener('submit', onSubmit);
+    projectModalCancelBtn?.addEventListener('click', onCancel);
+    projectModalBackdropEl?.addEventListener('click', onCancel);
+    window.addEventListener('keydown', onKeyDown);
+  });
+}
+
+/**
+ * Modal centrado para elegir proyecto destino al mover una tarea.
+ * - Evita `prompt()` (inconsistente en móvil y difícil de usar con muchos proyectos).
+ * - Devuelve el `projectId` destino o null si canceló.
+ * @param {{ taskText: string, projects: Project[] }} options
+ * @returns {Promise<string|null>} projectId destino o null si canceló
+ */
+function openMoveTaskModal(options) {
+  return new Promise((resolve) => {
+    const fallback = () => {
+      const names = options.projects.map((p, i) => `${i + 1}. ${p.name}`).join('\n');
+      const inputRaw = prompt(`Mover a qué proyecto?\n\n${names}\n\nEscribe el número:`);
+      if (!inputRaw) return resolve(null);
+      const idx = Number.parseInt(inputRaw, 10);
+      if (!Number.isFinite(idx) || idx < 1 || idx > options.projects.length) return resolve(null);
+      resolve(options.projects[idx - 1].id);
+    };
+
+    if (!moveTaskModalEl || !moveTaskModalListEl || !moveTaskModalConfirmBtn) {
+      fallback();
+      return;
+    }
+
+    // Guardamos la selección actual (por defecto: el primer destino disponible).
+    let selectedId = options.projects[0]?.id ?? null;
+
+    const cleanup = () => {
+      moveTaskModalEl.classList.add('hidden');
+      moveTaskModalListEl.innerHTML = '';
+      moveTaskModalCancelBtn?.removeEventListener('click', onCancel);
+      moveTaskModalBackdropEl?.removeEventListener('click', onCancel);
+      moveTaskModalConfirmBtn.removeEventListener('click', onConfirm);
+      window.removeEventListener('keydown', onKeyDown);
+      setPopupOpen(false);
+    };
+
+    const finish = (value) => {
+      cleanup();
+      resolve(value);
+    };
+
+    const onCancel = () => finish(null);
+    const onConfirm = () => finish(selectedId);
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') onCancel();
+    };
+
+    if (moveTaskModalTasknameEl) moveTaskModalTasknameEl.textContent = options.taskText || '—';
+    moveTaskModalListEl.innerHTML = '';
+    options.projects.forEach((p) => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = [
+        'w-full',
+        'text-left',
+        'px-3', 'py-2',
+        'rounded-lg',
+        'border',
+        'border-slate-200 dark:border-slate-700',
+        'bg-white dark:bg-slate-800',
+        'hover:bg-slate-100 dark:hover:bg-slate-700',
+        'transition',
+        'truncate'
+      ].join(' ');
+      row.textContent = p.name;
+      row.addEventListener('click', () => {
+        selectedId = p.id;
+        // Marcar visualmente la opción seleccionada.
+        Array.from(moveTaskModalListEl.querySelectorAll('button')).forEach((b) => {
+          b.classList.remove('border-primario', 'bg-[#E3F2FD]', 'dark:bg-slate-700');
+        });
+        row.classList.add('border-primario', 'bg-[#E3F2FD]', 'dark:bg-slate-700');
+      });
+      moveTaskModalListEl.appendChild(row);
+    });
+
+    // marcar el primero
+    const firstBtn = moveTaskModalListEl.querySelector('button');
+    if (firstBtn) firstBtn.click();
+
+    moveTaskModalEl.classList.remove('hidden');
+    setPopupOpen(true);
+    moveTaskModalCancelBtn?.addEventListener('click', onCancel);
+    moveTaskModalBackdropEl?.addEventListener('click', onCancel);
+    moveTaskModalConfirmBtn.addEventListener('click', onConfirm);
+    window.addEventListener('keydown', onKeyDown);
+  });
+}
 
 // ===== Sección: Tareas completadas (solo sesión) =====
 /**
@@ -124,8 +441,8 @@ function updateCompletedVisibility() {
   // Movemos de completadas → pendientes.
   const [restored] = completedTasks.splice(idx, 1);
   tasks.push(restored);
-  saveTasks();
-  createTaskElement(restored);
+  saveState();
+  if (restored.projectId === activeProjectId) createTaskElement(restored);
 
   // Animación de salida
   li.classList.add('opacity-0', 'translate-x-4');
@@ -139,23 +456,6 @@ function updateCompletedVisibility() {
     filterTasks();
   }, 200);
 });
-
-/**
- * Genera un id único (best-effort) para cada tarea.
- * @returns {string}
- */
-function generateTaskId() {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-/**
- * Crea un objeto tarea.
- * @param {string} text
- * @returns {Task}
- */
-function createTask(text) {
-  return { id: generateTaskId(), text };
-}
 
 // ===== Eventos de UI =====
 // Al enviar el formulario: evitamos recargar la página y añadimos la tarea.
@@ -188,15 +488,15 @@ taskList.addEventListener('click', function(event) {
       if (idx !== -1) {
         const [removed] = tasks.splice(idx, 1);
         completedTasks.push(removed);
-        saveTasks();
-        createCompletedTaskElement(removed);
+        saveState();
+        if (removed.projectId === activeProjectId) createCompletedTaskElement(removed);
       } else {
         // Fallback: si no la encontramos en memoria, mantenemos el comportamiento anterior.
         tasks = tasks.filter(task => task.id !== id);
-        saveTasks();
+        saveState();
       }
     } else {
-      saveTasks();
+      saveState();
     }
 
     // Animación de salida
@@ -205,6 +505,37 @@ taskList.addEventListener('click', function(event) {
 
     // Mantiene el filtro consistente si hay texto de búsqueda.
     filterTasks();
+    return;
+  }
+
+  // Mover tarea a otro proyecto.
+  const moveBtn = event.target.closest('.move-btn');
+  if (moveBtn) {
+    const li = moveBtn.closest('li');
+    if (!li) return;
+    const id = li.dataset.id;
+    if (!id) return;
+
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+
+    const currentProjectId = task.projectId;
+    const otherProjects = projects.filter(p => p.id !== currentProjectId);
+    if (otherProjects.length === 0) {
+      alert('Crea otro proyecto para poder mover tareas.');
+      return;
+    }
+
+    openMoveTaskModal({ taskText: task.text, projects: otherProjects }).then((targetProjectId) => {
+      if (!targetProjectId) return;
+      task.projectId = targetProjectId;
+      saveState();
+
+      // Sale de la lista actual (porque ya no pertenece al proyecto activo).
+      li.classList.add('opacity-0', 'translate-x-4');
+      setTimeout(() => li.remove(), 200);
+      filterTasks();
+    });
     return;
   }
 
@@ -249,7 +580,7 @@ taskList.addEventListener('keydown', function(event) {
  */
 function createTaskElement(taskOrText) {
   const task = typeof taskOrText === 'string'
-    ? createTask(taskOrText)
+    ? createTask(taskOrText, activeProjectId ?? '')
     : taskOrText;
 
   // Creamos el <li> con clases (Tailwind) y estado inicial para animación de entrada.
@@ -293,26 +624,59 @@ function createTaskElement(taskOrText) {
   editBtn.setAttribute('aria-label', 'Editar');
   editBtn.title = 'Editar';
 
-  // Icono SVG (Bootstrap) - pencil-fill
-  const pencilSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  pencilSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-  pencilSvg.setAttribute('viewBox', '0 0 16 16');
-  pencilSvg.setAttribute('fill', 'currentColor');
-  pencilSvg.classList.add('w-[18px]', 'h-[18px]');
+  // Icono SVG compartido (mismo que en proyectos)
+  editBtn.appendChild(createEditIconSvg());
 
-  const pencilPath1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  pencilPath1.setAttribute('d', 'M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708z');
+  
+  // Botón "mover a proyecto"
+  const moveBtn = document.createElement('button');
+  moveBtn.type = 'button';
+  moveBtn.classList.add(
+    'move-btn',
+    'cursor-pointer',
+    'w-[25px]', 'h-[25px]',
+    'flex', 'items-center', 'justify-center',
+    'text-primario',
+    'dark:text-blue-300'
+  );
+  moveBtn.setAttribute('aria-label', 'Mover');
+  moveBtn.title = 'Mover a proyecto';
 
-  const pencilPath2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  pencilPath2.setAttribute('d', 'M.5 13.5V16h2.5l7.373-7.373-2.5-2.5zM11.207 2.5l2.5 2.5-1 1-2.5-2.5z');
+  // Icono SVG estilo "csv file-transfer-line": documento con flecha de transferencia.
+  const transferSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  transferSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  transferSvg.setAttribute('viewBox', '0 0 16 16');
+  transferSvg.setAttribute('fill', 'none');
+  transferSvg.setAttribute('width', '16');
+  transferSvg.setAttribute('height', '16');
 
-  pencilSvg.appendChild(pencilPath1);
-  pencilSvg.appendChild(pencilPath2);
-  editBtn.appendChild(pencilSvg);
+  // Contorno del documento
+  const docPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  docPath.setAttribute(
+    'd',
+    'M4 2.5A1.5 1.5 0 0 1 5.5 1h3.086a1.5 1.5 0 0 1 1.06.44L12.56 4.354A1.5 1.5 0 0 1 13 5.414V13.5A1.5 1.5 0 0 1 11.5 15h-6A1.5 1.5 0 0 1 4 13.5z'
+  );
+  docPath.setAttribute('stroke', 'currentColor');
+  docPath.setAttribute('stroke-width', '1.2');
+  docPath.setAttribute('stroke-linecap', 'round');
+  docPath.setAttribute('stroke-linejoin', 'round');
 
-  // Montamos la estructura final: [botón borrar] + [texto] + [editar]
+  // Flecha de transferencia (derecha)
+  const arrowPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  arrowPath.setAttribute('d', 'M5 8h5m0 0-1.5-1.5M10 8 8.5 9.5');
+  arrowPath.setAttribute('stroke', 'currentColor');
+  arrowPath.setAttribute('stroke-width', '1.4');
+  arrowPath.setAttribute('stroke-linecap', 'round');
+  arrowPath.setAttribute('stroke-linejoin', 'round');
+
+  transferSvg.appendChild(docPath);
+  transferSvg.appendChild(arrowPath);
+  moveBtn.appendChild(transferSvg);
+
+  // Montamos la estructura final: [botón borrar] + [texto] + [mover] + [editar]
   li.appendChild(deleteBtn);
   li.appendChild(span);
+  li.appendChild(moveBtn);
   li.appendChild(editBtn);
 
   // Insertamos en la lista
@@ -459,7 +823,7 @@ function finishEdit(li) {
     const idx = tasks.findIndex(t => t.id === id);
     if (idx !== -1) tasks[idx].text = newText;
   }
-  saveTasks();
+  saveState();
 
   const span = document.createElement('span');
   span.textContent = newText;
@@ -510,49 +874,263 @@ function addTask() {
   const text = input.value.trim();
   if (text === "") return;
 
-  const task = createTask(text);
+  if (!activeProjectId) return;
+  const task = createTask(text, activeProjectId);
   tasks.push(task);
   createTaskElement(task);
-  saveTasks();
+  saveState();
   input.value = "";
 }
 
 // ===== Persistencia (localStorage) =====
-// Guarda el array `tasks` como JSON en el navegador.
-/**
- * Persiste el estado actual de tareas en `localStorage`.
- * @returns {void}
- */
-function saveTasks() {
-  localStorage.setItem('tasks', JSON.stringify(tasks));
+// Guardamos un único objeto (state v2) para poder soportar:
+// - múltiples proyectos (cada tarea pertenece a un proyecto)
+// - migraciones futuras (versionado por `schemaVersion`)
+function saveState() {
+  const state = {
+    schemaVersion: SCHEMA_VERSION,
+    projects,
+    tasks,
+    ui: { activeProjectId }
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-// Carga tareas guardadas (si existen) y las renderiza en la lista.
-/**
- * Carga tareas desde `localStorage` y las renderiza.
- * Soporta migración desde el formato antiguo (array de strings).
- * @returns {void}
- */
-function loadTasks() {
-  const storedTasks = localStorage.getItem('tasks');
-  if (storedTasks) {
-    const parsed = JSON.parse(storedTasks);
+// Backward-compatible aliases (tests / legacy harness).
+function saveTasks() {
+  saveState();
+}
 
-    if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'string') {
-      // Formato antiguo: array de strings → migramos a objetos.
-      tasks = parsed.map(text => createTask(text));
-    } else if (Array.isArray(parsed)) {
-      tasks = parsed;
-    } else {
-      tasks = [];
+function clearLegacyIfMigrated() {
+  // Mantener por compatibilidad: no borramos siempre, pero evitamos inconsistencias.
+  // Si existe el state nuevo, dejamos el legacy como fallback histórico.
+}
+
+function loadState() {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (parsed && parsed.schemaVersion === SCHEMA_VERSION) {
+        projects = Array.isArray(parsed.projects) ? parsed.projects : [];
+        tasks = Array.isArray(parsed.tasks) ? parsed.tasks : [];
+        activeProjectId = parsed.ui?.activeProjectId ?? null;
+        return;
+      }
+    } catch {
+      // si el JSON está corrupto, caemos a migración/estado vacío
     }
-
-    tasks.forEach(task => createTaskElement(task));
   }
 
-  // Asegura que la sección "Tareas completadas" refleje el estado actual.
-  // (En especial útil en entornos de test donde se resetea el DOM).
+  // Migración desde la versión antigua: localStorage.tasks
+  // Antes NextUp guardaba únicamente tareas. Para no perder datos:
+  // - creamos un proyecto por defecto
+  // - asignamos `projectId` a todas las tareas legacy
+  const legacy = localStorage.getItem(LEGACY_TASKS_KEY);
+  const defaultProject = createProject('Mi proyecto');
+  projects = [defaultProject];
+  activeProjectId = defaultProject.id;
+
+  if (legacy) {
+    try {
+      const parsed = JSON.parse(legacy);
+      if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'string') {
+        tasks = parsed.map(text => createTask(String(text), defaultProject.id));
+      } else if (Array.isArray(parsed)) {
+        // Soporta objetos antiguos {id,text} sin projectId
+        tasks = parsed.map(t => {
+          const text = typeof t?.text === 'string' ? t.text : String(t);
+          const id = typeof t?.id === 'string' ? t.id : generateId();
+          return { id, text, projectId: defaultProject.id };
+        });
+      } else {
+        tasks = [];
+      }
+    } catch {
+      tasks = [];
+    }
+  } else {
+    tasks = [];
+  }
+
+  saveState();
+  clearLegacyIfMigrated();
+}
+
+// Backward-compatible alias (tests / legacy harness).
+function loadTasks() {
+  loadState();
+  ensureAtLeastOneProject();
+  renderProjects();
+  setActiveProjectId(activeProjectId);
+}
+
+function ensureAtLeastOneProject() {
+  // La app siempre necesita un proyecto activo. Si no hay ninguno:
+  // - creamos uno por defecto y lo activamos
+  if (projects.length === 0) {
+    const p = createProject('Mi proyecto');
+    projects = [p];
+    activeProjectId = p.id;
+  }
+  if (!activeProjectId || !projects.some(p => p.id === activeProjectId)) {
+    activeProjectId = projects[0]?.id ?? null;
+  }
+}
+
+function renderProjects() {
+  // Eliminar proyecto implica borrar todas sus tareas:
+  // - pendientes (persistidas)
+  // - completadas de sesión (UI)
+  const deleteProjectById = (id) => {
+    projects = projects.filter(pr => pr.id !== id);
+    tasks = tasks.filter(t => t.projectId !== id);
+    completedTasks = completedTasks.filter(t => t.projectId !== id);
+
+    ensureAtLeastOneProject();
+    saveState();
+    setActiveProjectId(activeProjectId);
+  };
+
+  const renderInto = (ul) => {
+    if (!ul) return;
+    ul.innerHTML = '';
+
+    projects
+      .slice()
+      .sort((a, b) => a.createdAt - b.createdAt)
+      .forEach((p) => {
+        const li = document.createElement('li');
+        li.className = 'flex items-center gap-2';
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = [
+          'flex-1',
+          'text-left',
+          'px-3', 'py-2',
+          'rounded-lg',
+          'border',
+          p.id === activeProjectId
+            ? 'border-primario bg-[#E3F2FD] dark:bg-slate-700'
+            : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800',
+          'hover:bg-slate-100 dark:hover:bg-slate-700',
+          'transition',
+          'truncate'
+        ].join(' ');
+        btn.textContent = p.name;
+        btn.addEventListener('click', () => {
+          // Cambiar proyecto activo: re-renderiza listas filtradas por proyecto.
+          setActiveProjectId(p.id);
+          closeProjectDrawer();
+        });
+
+        const renameBtn = document.createElement('button');
+        renameBtn.type = 'button';
+        renameBtn.className = 'px-2 py-2 text-primario dark:text-blue-300 hover:opacity-80 transition inline-flex items-center justify-center';
+        renameBtn.title = 'Renombrar';
+        renameBtn.setAttribute('aria-label', 'Renombrar');
+
+        // Icono de lápiz (mismo dibujo que en el botón de editar tareas),
+        // creado directamente con createElementNS y tamaño fijo.
+        const projEditSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        projEditSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        projEditSvg.setAttribute('viewBox', '0 0 16 16');
+        projEditSvg.setAttribute('fill', 'currentColor');
+        projEditSvg.setAttribute('width', '18');
+        projEditSvg.setAttribute('height', '18');
+
+        const projPencilPath1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        projPencilPath1.setAttribute('d', 'M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708z');
+
+        const projPencilPath2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        projPencilPath2.setAttribute('d', 'M.5 13.5V16h2.5l7.373-7.373-2.5-2.5zM11.207 2.5l2.5 2.5-1 1-2.5-2.5z');
+
+        projEditSvg.appendChild(projPencilPath1);
+        projEditSvg.appendChild(projPencilPath2);
+        renameBtn.appendChild(projEditSvg);
+        renameBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          closeProjectDrawer();
+          // Renombrar: usamos el modal centrado (misma UX en desktop/móvil).
+          openProjectNameModal({ title: 'Renombrar proyecto', submitLabel: 'Guardar', initialValue: p.name })
+            .then((trimmed) => {
+              if (!trimmed) return;
+              p.name = trimmed;
+              saveState();
+              renderProjects();
+              const active = getActiveProject();
+              const activeName = active?.name ?? '—';
+              if (activeProjectNameEl) activeProjectNameEl.textContent = activeName;
+              if (activeProjectNameDesktopEl) activeProjectNameDesktopEl.textContent = activeName;
+            });
+        });
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        // En claro se mantiene rojo; en oscuro igual que el lápiz (dark:text-blue-300).
+        delBtn.className = 'px-2 py-2 text-red-600 dark:text-blue-300 hover:opacity-80 transition inline-flex items-center justify-center';
+        delBtn.title = 'Eliminar';
+        delBtn.setAttribute('aria-label', 'Eliminar');
+
+        // Icono SVG tipo "delete-bin-line", creado con createElementNS y tamaño fijo.
+        const trashSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        trashSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        trashSvg.setAttribute('viewBox', '0 0 16 16');
+        trashSvg.setAttribute('fill', 'none');
+        trashSvg.setAttribute('width', '18');
+        trashSvg.setAttribute('height', '18');
+
+        const trashPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        trashPath.setAttribute('d', 'M5.5 5.5V12M8 5.5V12M10.5 5.5V12M3 3.5h10M6 2h4l1 1.5H5L6 2zM4 3.5L4.5 13a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1L12 3.5');
+        trashPath.setAttribute('stroke', 'currentColor');
+        trashPath.setAttribute('stroke-width', '1.4');
+        trashPath.setAttribute('stroke-linecap', 'round');
+        trashPath.setAttribute('stroke-linejoin', 'round');
+
+        trashSvg.appendChild(trashPath);
+        delBtn.appendChild(trashSvg);
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          closeProjectDrawer();
+          // Borrado directo: elimina proyecto y todas sus tareas.
+          deleteProjectById(p.id);
+        });
+
+        li.appendChild(btn);
+        li.appendChild(renameBtn);
+        li.appendChild(delBtn);
+        ul.appendChild(li);
+      });
+  };
+
+  renderInto(projectListEl);
+  renderInto(projectListMobileEl);
+}
+
+function addProjectFromPrompt() {
+  // Crear proyecto: abrimos modal centrado, creamos, persistimos y activamos.
+  openProjectNameModal({ title: 'Crear proyecto', submitLabel: 'Crear', initialValue: '' }).then((trimmed) => {
+    if (!trimmed) return;
+    const p = createProject(trimmed);
+    projects.push(p);
+    saveState();
+    setActiveProjectId(p.id);
+    closeProjectDrawer();
+  });
+}
+
+function renderTasksForActiveProject() {
+  // Render “por proyecto”: la UI muestra solo las tareas del proyecto activo.
+  taskList.innerHTML = '';
+  const completed = document.getElementById('completed');
+  if (completed) completed.innerHTML = '';
+
+  getVisiblePendingTasks().forEach(task => createTaskElement(task));
+  getVisibleCompletedTasks().forEach(task => createCompletedTaskElement(task));
+
   updateCompletedVisibility();
+  filterTasks();
 }
 
 // ===== Filtro/búsqueda =====
@@ -591,6 +1169,16 @@ function filterTasks() {
 
 // ===== Inicialización =====
 // Al cargar la página, restauramos las tareas guardadas.
-loadTasks();
-updateCompletedVisibility();
+loadState();
+ensureAtLeastOneProject();
+
+// Wire de UI de proyectos (si existe en el HTML)
+projectAddBtn?.addEventListener('click', addProjectFromPrompt);
+projectAddMobileBtn?.addEventListener('click', addProjectFromPrompt);
+projectDrawerOpenBtn?.addEventListener('click', openProjectDrawer);
+projectDrawerCloseBtn?.addEventListener('click', closeProjectDrawer);
+projectDrawerBackdropEl?.addEventListener('click', closeProjectDrawer);
+
+renderProjects();
+setActiveProjectId(activeProjectId);
 
