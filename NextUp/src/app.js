@@ -1130,6 +1130,8 @@ function renderProjects() {
         const li = document.createElement('li');
         li.className = 'flex items-center gap-2';
 
+        const isInDrawerList = ul === projectListMobileEl;
+
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = [
@@ -1178,11 +1180,19 @@ function renderProjects() {
         renameBtn.appendChild(projEditSvg);
         renameBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          closeProjectDrawer();
+          const wasDrawerOpen = isInDrawerList && projectDrawerEl && !projectDrawerEl.classList.contains('hidden');
+          if (wasDrawerOpen) {
+            closeProjectDrawer();
+          }
           // Renombrar: usamos el modal centrado (misma UX en desktop/móvil).
           openProjectNameModal({ title: 'Renombrar proyecto', submitLabel: 'Guardar', initialValue: p.name })
             .then((trimmed) => {
-              if (!trimmed) return;
+              if (!trimmed) {
+                if (wasDrawerOpen) {
+                  openProjectDrawer();
+                }
+                return;
+              }
               p.name = trimmed;
               saveState();
               renderProjects();
@@ -1190,6 +1200,9 @@ function renderProjects() {
               const activeName = active?.name ?? '—';
               if (activeProjectNameEl) activeProjectNameEl.textContent = activeName;
               if (activeProjectNameDesktopEl) activeProjectNameDesktopEl.textContent = activeName;
+              if (wasDrawerOpen) {
+                openProjectDrawer();
+              }
             });
         });
 
@@ -1219,15 +1232,26 @@ function renderProjects() {
         delBtn.appendChild(trashSvg);
         delBtn.addEventListener('click', (e) => {
           e.stopPropagation();
+          const wasDrawerOpen = isInDrawerList && projectDrawerEl && !projectDrawerEl.classList.contains('hidden');
+          if (wasDrawerOpen) {
+            closeProjectDrawer();
+          }
           openConfirmModal({
             message: `¿Eliminar ${p.name}?`,
             acceptLabel: 'Eliminar',
             cancelLabel: 'Cancelar'
           }).then((ok) => {
-            if (!ok) return;
-            closeProjectDrawer();
+            if (!ok) {
+              if (wasDrawerOpen) {
+                openProjectDrawer();
+              }
+              return;
+            }
             // Borrado confirmado: elimina proyecto y todas sus tareas.
             deleteProjectById(p.id);
+            if (wasDrawerOpen) {
+              openProjectDrawer();
+            }
           });
         });
 
@@ -1249,14 +1273,26 @@ function renderProjects() {
  */
 function addProjectFromPrompt() {
   // Crear proyecto: abrimos modal centrado, creamos, persistimos y activamos.
-  openProjectNameModal({ title: 'Crear proyecto', submitLabel: 'Crear', initialValue: '' }).then((trimmed) => {
-    if (!trimmed) return;
-    const p = createProject(trimmed);
-    projects.push(p);
-    saveState();
-    setActiveProjectId(p.id);
+  const wasDrawerOpen = projectDrawerEl && !projectDrawerEl.classList.contains('hidden');
+  if (wasDrawerOpen) {
     closeProjectDrawer();
-  });
+  }
+  openProjectNameModal({ title: 'Crear proyecto', submitLabel: 'Crear', initialValue: '' })
+    .then((trimmed) => {
+      if (!trimmed) {
+        if (wasDrawerOpen) {
+          openProjectDrawer();
+        }
+        return;
+      }
+      const p = createProject(trimmed);
+      projects.push(p);
+      saveState();
+      setActiveProjectId(p.id);
+      if (wasDrawerOpen) {
+        openProjectDrawer();
+      }
+    });
 }
 
 /**
@@ -1322,6 +1358,33 @@ projectAddMobileBtn?.addEventListener('click', addProjectFromPrompt);
 projectDrawerOpenBtn?.addEventListener('click', openProjectDrawer);
 projectDrawerCloseBtn?.addEventListener('click', closeProjectDrawer);
 projectDrawerBackdropEl?.addEventListener('click', closeProjectDrawer);
+
+// Cerrar/cancelar todos los popups activos al hacer clic fuera de cualquier panel.
+document.addEventListener('click', (event) => {
+  if (openPopupCount === 0) return;
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+
+  // Si el clic ha sido dentro de algún panel de popup, no hacemos nada.
+  if (target.closest('#project-drawer-content, #project-modal-panel, #move-task-modal-panel, #confirm-modal-panel')) {
+    return;
+  }
+
+  // Drawer de proyectos
+  if (projectDrawerEl && !projectDrawerEl.classList.contains('hidden')) {
+    closeProjectDrawer();
+  }
+
+  // Modal crear/renombrar proyecto
+  projectModalCancelBtn?.click();
+
+  // Modal mover tarea
+  moveTaskModalCancelBtn?.click();
+
+  // Modal de confirmación genérico
+  const confirmCancelBtn = document.getElementById('confirm-modal-cancel');
+  confirmCancelBtn?.click();
+}, true);
 
 renderProjects();
 setActiveProjectId(activeProjectId);

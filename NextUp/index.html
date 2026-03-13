@@ -42,6 +42,11 @@
         justify-content: center;
       }
 
+      /* Cuando hay un popup abierto, oscurecer solo el contenido de fondo (no el propio popup) */
+      .has-popup body > *:not(#project-drawer):not(#project-modal):not(#move-task-modal):not(#confirm-modal) {
+        filter: brightness(0.5);
+      }
+
       /* En móvil, ocultar botón de tema mientras haya un popup abierto */
       @media (max-width: 768px) {
         .has-popup #theme-toggle {
