@@ -378,6 +378,121 @@ function openMoveTaskModal(options) {
   });
 }
 
+/**
+ * Confirmación no-bloqueante (reemplazo de `confirm()`).
+ * - No depende de diálogos nativos (que pueden estar bloqueados en algunos entornos).
+ * - Crea el modal dinámicamente (sin tocar el HTML).
+ * @param {{ message: string, acceptLabel?: string, cancelLabel?: string }} options
+ * @returns {Promise<boolean>} true si aceptó, false si canceló
+ */
+function openConfirmModal(options) {
+  return new Promise((resolve) => {
+    const fallback = () => {
+      try {
+        resolve(Boolean(window.confirm(options.message)));
+      } catch {
+        resolve(false);
+      }
+    };
+
+    if (!document?.body) {
+      fallback();
+      return;
+    }
+
+    // Reutilizar si ya existe.
+    let modal = document.getElementById('confirm-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'confirm-modal';
+      modal.className = 'fixed inset-0 hidden z-50';
+
+      const backdrop = document.createElement('div');
+      backdrop.id = 'confirm-modal-backdrop';
+      backdrop.className = 'absolute inset-0 bg-black/40';
+
+      const center = document.createElement('div');
+      center.className = 'absolute inset-0 flex items-center justify-center p-4';
+
+      const panel = document.createElement('div');
+      panel.id = 'confirm-modal-panel';
+      panel.className = 'w-full max-w-md bg-white dark:bg-slate-800 rounded-xl p-8 sm:p-10 flex flex-col gap-6';
+
+      const msg = document.createElement('div');
+      msg.id = 'confirm-modal-message';
+      msg.className = 'text-base text-slate-800 dark:text-slate-100';
+
+      const actions = document.createElement('div');
+      actions.className = 'flex items-center justify-end gap-3';
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.id = 'confirm-modal-cancel';
+      cancelBtn.type = 'button';
+      cancelBtn.className = 'px-4 py-2 border-2 border-primario rounded-lg dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow hover:bg-slate-200 dark:hover:bg-slate-700 transition';
+
+      const acceptBtn = document.createElement('button');
+      acceptBtn.id = 'confirm-modal-accept';
+      acceptBtn.type = 'button';
+      acceptBtn.className = 'px-4 py-2 bg-primario text-white rounded-lg shadow hover:bg-blue-900 transition';
+
+      actions.appendChild(cancelBtn);
+      actions.appendChild(acceptBtn);
+      panel.appendChild(msg);
+      panel.appendChild(actions);
+      center.appendChild(panel);
+      modal.appendChild(backdrop);
+      modal.appendChild(center);
+      document.body.appendChild(modal);
+    }
+
+    const messageEl = document.getElementById('confirm-modal-message');
+    const acceptBtn = document.getElementById('confirm-modal-accept');
+    const cancelBtn = document.getElementById('confirm-modal-cancel');
+    const backdropEl = document.getElementById('confirm-modal-backdrop');
+    const panelEl = document.getElementById('confirm-modal-panel');
+
+    if (!messageEl || !acceptBtn || !cancelBtn || !backdropEl || !panelEl) {
+      fallback();
+      return;
+    }
+
+    messageEl.textContent = options.message;
+    cancelBtn.textContent = options.cancelLabel ?? 'Cancelar';
+    acceptBtn.textContent = options.acceptLabel ?? 'Aceptar';
+
+    const cleanup = () => {
+      modal.classList.add('hidden');
+      acceptBtn.removeEventListener('click', onAccept);
+      cancelBtn.removeEventListener('click', onCancel);
+      backdropEl.removeEventListener('click', onCancel);
+      window.removeEventListener('keydown', onKeyDown);
+      setPopupOpen(false);
+    };
+
+    const finish = (value) => {
+      cleanup();
+      resolve(value);
+    };
+
+    const onCancel = () => finish(false);
+    const onAccept = () => finish(true);
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') onCancel();
+      if (e.key === 'Enter') onAccept();
+    };
+
+    modal.classList.remove('hidden');
+    setPopupOpen(true);
+    cancelBtn.addEventListener('click', onCancel);
+    acceptBtn.addEventListener('click', onAccept);
+    backdropEl.addEventListener('click', onCancel);
+    window.addEventListener('keydown', onKeyDown);
+
+    // Foco al botón de aceptar para UX/teclado.
+    setTimeout(() => acceptBtn.focus(), 0);
+  });
+}
+
 // ===== Sección: Tareas completadas (solo sesión) =====
 /**
  * Asegura que exista una sección de "Tareas completadas".
@@ -1104,9 +1219,16 @@ function renderProjects() {
         delBtn.appendChild(trashSvg);
         delBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          closeProjectDrawer();
-          // Borrado directo: elimina proyecto y todas sus tareas.
-          deleteProjectById(p.id);
+          openConfirmModal({
+            message: `¿Eliminar ${p.name}?`,
+            acceptLabel: 'Eliminar',
+            cancelLabel: 'Cancelar'
+          }).then((ok) => {
+            if (!ok) return;
+            closeProjectDrawer();
+            // Borrado confirmado: elimina proyecto y todas sus tareas.
+            deleteProjectById(p.id);
+          });
         });
 
         li.appendChild(btn);

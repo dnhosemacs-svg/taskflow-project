@@ -369,6 +369,13 @@ async function runTests() {
     assert(deleteBtn, 'Falta botón Eliminar en la lista de proyectos');
     deleteBtn.click();
 
+    // Confirmación: el borrado ahora requiere aceptar en el modal (no es confirm() nativo).
+    const accept = document.getElementById('confirm-modal-accept');
+    assert(accept, 'Falta botón Aceptar del modal de confirmación');
+    accept.click();
+    // Esperar a que la promesa del modal resuelva y se persista el estado.
+    await sleep(0);
+
     const st = readState();
     assert(st, 'No hay state');
     assertEqual(st.projects.length, 1, 'Debería quedar 1 proyecto');
