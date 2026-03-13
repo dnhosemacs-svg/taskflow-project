@@ -980,6 +980,23 @@ function cancelEdit(li) {
   delete li.dataset.originalText;
 }
 
+// Clic fuera de la entrada de edición: equivalente a pulsar Escape.
+document.addEventListener('click', (event) => {
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  if (!taskList) return;
+
+  // ¿Hay alguna tarea en modo edición?
+  const editingLi = taskList.querySelector('li[data-editing="true"]');
+  if (!editingLi) return;
+
+  // Si el clic es dentro del propio <li> (incluyendo el input o sus botones), no cancelamos aquí.
+  if (editingLi.contains(target)) return;
+
+  // Clic fuera de la tarea que se está editando: cancelar como si fuera Escape.
+  cancelEdit(editingLi);
+}, true);
+
 // ===== Crear y añadir una tarea nueva desde el input =====
 /**
  * Lee el input, crea la tarea, la renderiza y persiste.
