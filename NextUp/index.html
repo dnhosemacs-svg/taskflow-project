@@ -31,6 +31,7 @@
         width: min(92vw, 420px);
         max-height: 85vh;
         overflow: auto;
+        margin-top: 20vh; /* desplaza el popup de proyectos hacia abajo respecto al centro */
       }
 
       /* Modal mover tarea (centrado) */
@@ -62,6 +63,13 @@
       .dark #move-task-modal-panel,
       .dark #confirm-modal-panel {
         box-shadow: 0 18px 45px rgba(15, 23, 42, 0.70);
+      }
+
+      /* Desplazar todos los paneles de popup un poco hacia abajo */
+      #project-modal-panel,
+      #move-task-modal-panel,
+      #confirm-modal-panel {
+        margin-top: 20vh;
       }
 
       /* Alinear "Cerrar" a la derecha (fallback sin Tailwind) */
