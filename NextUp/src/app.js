@@ -30,6 +30,7 @@ const activeProjectNameEl = document.getElementById('active-project-name');
 const activeProjectNameDesktopEl = document.getElementById('active-project-name-desktop');
 const projectListEl = document.getElementById('project-list');
 const projectListMobileEl = document.getElementById('project-list-mobile');
+const projectSelectMobileEl = document.getElementById('project-select-mobile');
 const projectAddBtn = document.getElementById('project-add');
 const projectAddMobileBtn = document.getElementById('project-add-mobile');
 const projectDrawerEl = document.getElementById('project-drawer');
@@ -1276,6 +1277,21 @@ function renderProjects() {
 
   renderInto(projectListEl);
   renderInto(projectListMobileEl);
+
+  // Sincronizar selector móvil (dropdown) si existe en el DOM.
+  if (projectSelectMobileEl) {
+    projectSelectMobileEl.innerHTML = '';
+    projects
+      .slice()
+      .sort((a, b) => a.createdAt - b.createdAt)
+      .forEach((p) => {
+        const option = document.createElement('option');
+        option.value = p.id;
+        option.textContent = p.name;
+        if (p.id === activeProjectId) option.selected = true;
+        projectSelectMobileEl.appendChild(option);
+      });
+  }
 }
 
 /**
@@ -1372,6 +1388,12 @@ projectAddMobileBtn?.addEventListener('click', addProjectFromPrompt);
 projectDrawerOpenBtn?.addEventListener('click', openProjectDrawer);
 projectDrawerCloseBtn?.addEventListener('click', closeProjectDrawer);
 projectDrawerBackdropEl?.addEventListener('click', closeProjectDrawer);
+projectSelectMobileEl?.addEventListener('change', (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLSelectElement)) return;
+  if (!target.value) return;
+  setActiveProjectId(target.value);
+});
 
 // Cerrar/cancelar todos los popups activos al hacer clic fuera de cualquier panel.
 document.addEventListener('click', (event) => {

@@ -225,3 +225,13 @@
 }
 .dark .modal-option.is-selected { background: rgb(51 65 85); border-color: var(--color-blue-300); }
 
+/* Selector de proyectos en móvil */
+.project-select-mobile {
+  display: none;
+}
+@media (max-width: 640px) {
+  .project-select-mobile {
+    display: block;
+  }
+}
+

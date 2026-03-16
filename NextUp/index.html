@@ -103,14 +103,14 @@
 
             <!-- Contenido principal -->
             <main class="flex-1 min-w-0">
-                <!-- Barra superior (móvil): botón de proyectos + nombre proyecto activo -->
-                <div class="md:hidden flex items-center justify-between gap-3 mb-6">
-                    <button id="project-drawer-open" type="button" class="btn btn-ghost">
-                        Proyectos
-                    </button>
-                    <div class="min-w-0 text-right">
-                        <div id="active-project-name" class="font-semibold truncate">—</div>
-                    </div>
+                <!-- Barra superior (móvil): selector de proyectos + nombre proyecto activo -->
+                <div class="md:hidden mb-6">
+                    <label for="project-select-mobile" class="sr-only">Proyecto</label>
+                    <select
+                        id="project-select-mobile"
+                        class="field w-full project-select-mobile"
+                        aria-label="Seleccionar proyecto"
+                    ></select>
                 </div>
 
                 <!-- Buscador: filtra tareas (la lógica suele estar en `app.js`) -->
