@@ -42,9 +42,15 @@
         justify-content: center;
       }
 
-      /* Cuando hay un popup abierto, oscurecer solo el contenido de fondo (no el propio popup) */
+      /* Cuando hay un popup abierto:
+         - cambiamos el fondo general del body a un tono más oscuro
+         - y oscurecemos el resto de contenido con un filtro,
+           excluyendo explícitamente los popups para que sigan resaltando */
+      .has-popup body {
+        background-color: #0f172a; /* similar a slate-900, pero forzado mientras haya popup */
+      }
       .has-popup body > *:not(#project-drawer):not(#project-modal):not(#move-task-modal):not(#confirm-modal) {
-        filter: brightness(0.5);
+        filter: brightness(0.35);
       }
 
       /* En móvil, ocultar botón de tema mientras haya un popup abierto */
