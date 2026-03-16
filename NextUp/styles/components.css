@@ -176,6 +176,16 @@
 .dark .icon-btn { color: var(--color-blue-300); }
 .icon-btn:focus { outline: 2px solid var(--color-primario); outline-offset: 2px; }
 
+/* Botón editar tarea: solo visible en móviles (similar al theme-toggle) */
+.edit-btn {
+  display: none;
+}
+@media (max-width: 640px) {
+  .edit-btn {
+    display: inline-flex;
+  }
+}
+
 .project-row { display: flex; align-items: center; gap: 0.5rem; }
 .project-btn {
   flex: 1;
