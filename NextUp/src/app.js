@@ -51,6 +51,13 @@ const moveTaskModalConfirmBtn = document.getElementById('move-task-modal-confirm
 const moveTaskModalListEl = document.getElementById('move-task-modal-list');
 const moveTaskModalTasknameEl = document.getElementById('move-task-modal-taskname');
 
+// Modo de renombrado de proyectos:
+// - true: edición inline (usado en la app principal)
+// - false: modal (compatibilidad con test-runner)
+const inlineProjectRename =
+  typeof document !== 'undefined' &&
+  document.documentElement?.dataset?.inlineProjectRename === 'true';
+
 // Lista (UI) donde mostramos "Tareas completadas" de esta sesión.
 // Importante: estas tareas NO se guardan en localStorage, por lo que al recargar desaparecen.
 const completedList = document.getElementById('completed');
@@ -1161,15 +1168,10 @@ function renderProjects() {
         btn.type = 'button';
         btn.className = `project-btn truncate${p.id === activeProjectId ? ' is-active' : ''}`;
         btn.textContent = p.name;
-        btn.addEventListener('click', () => {
-          // Cambiar proyecto activo: re-renderiza listas filtradas por proyecto.
-          setActiveProjectId(p.id);
-          closeProjectDrawer();
-        });
 
         const renameBtn = document.createElement('button');
         renameBtn.type = 'button';
-        renameBtn.className = 'icon-btn';
+        renameBtn.className = 'icon-btn project-edit-btn';
         renameBtn.title = 'Renombrar';
         renameBtn.setAttribute('aria-label', 'Renombrar');
 
@@ -1191,13 +1193,13 @@ function renderProjects() {
         projEditSvg.appendChild(projPencilPath1);
         projEditSvg.appendChild(projPencilPath2);
         renameBtn.appendChild(projEditSvg);
-        renameBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
+
+        // Renombrado vía modal (compatibilidad con test-runner)
+        const handleRenameWithModal = () => {
           const wasDrawerOpen = isInDrawerList && projectDrawerEl && !projectDrawerEl.classList.contains('hidden');
           if (wasDrawerOpen) {
             closeProjectDrawer();
           }
-          // Renombrar: usamos el modal centrado (misma UX en desktop/móvil).
           openProjectNameModal({ title: 'Renombrar proyecto', submitLabel: 'Guardar', initialValue: p.name })
             .then((trimmed) => {
               if (!trimmed) {
@@ -1217,6 +1219,85 @@ function renderProjects() {
                 openProjectDrawer();
               }
             });
+        };
+
+        // Renombrado inline (UX mejorada para la app principal)
+        const handleRenameInline = () => {
+          if (li.dataset.editing === 'true') return;
+          li.dataset.editing = 'true';
+
+          const originalName = p.name;
+
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.value = originalName;
+          input.classList.add('field', 'w-full', 'project-edit-input');
+
+          li.replaceChild(input, btn);
+
+          const finish = (nextName) => {
+            if (li.dataset.editing !== 'true') return;
+            li.dataset.editing = 'false';
+
+            const trimmed = String(nextName ?? '').trim();
+            li.replaceChild(btn, input);
+
+            if (!trimmed || trimmed === originalName) return;
+
+            p.name = trimmed;
+            saveState();
+            renderProjects();
+            const active = getActiveProject();
+            const activeName = active?.name ?? '—';
+            if (activeProjectNameEl) activeProjectNameEl.textContent = activeName;
+            if (activeProjectNameDesktopEl) activeProjectNameDesktopEl.textContent = activeName;
+          };
+
+          const cancel = () => {
+            if (li.dataset.editing !== 'true') return;
+            li.dataset.editing = 'false';
+            li.replaceChild(btn, input);
+          };
+
+          input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              finish(input.value);
+            } else if (e.key === 'Escape') {
+              e.preventDefault();
+              cancel();
+            }
+          });
+
+          input.addEventListener('blur', () => {
+            finish(input.value);
+          });
+
+          input.focus();
+          input.setSelectionRange(0, input.value.length);
+        };
+
+        const handleRename = inlineProjectRename ? handleRenameInline : handleRenameWithModal;
+
+        // Botón lápiz: renombrar (visible sobre todo en móvil).
+        renameBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          handleRename();
+        });
+
+        // Click en el proyecto:
+        // - 1 clic: cambiar proyecto activo
+        // - 2 clics (detalle === 2): entrar en modo edición inline
+        btn.addEventListener('click', (e) => {
+          if (li.dataset.editing === 'true') return;
+          if (e.detail === 2) {
+            e.preventDefault();
+            e.stopPropagation();
+            handleRename();
+            return;
+          }
+          setActiveProjectId(p.id);
+          closeProjectDrawer();
         });
 
         const delBtn = document.createElement('button');

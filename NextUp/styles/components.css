@@ -19,6 +19,11 @@
 @media (min-width: 640px) {
   .card-app { padding: 2.5rem; }
 }
+@media (min-width: 768px) {
+  .card-app {
+    padding-top: 1.25rem;
+  }
+}
 
 .app-layout {
   width: 100%;
@@ -28,6 +33,13 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+}
+@media (max-width: 640px) {
+  .app-layout {
+    margin-top: 1.5rem;
+    padding-inline: 1rem;
+    gap: 1.25rem;
+  }
 }
 @media (min-width: 768px) {
   .app-layout {
@@ -47,6 +59,19 @@
 .dark .projects-shell {
   background: rgb(30 41 59); /* slate-800 */
   box-shadow: 0 18px 45px rgba(15, 23, 42, 0.55);
+}
+
+/* En smartphone, la tarjeta de proyectos se funde con el fondo */
+@media (max-width: 767px) {
+  .projects-shell {
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+  }
+  .dark .projects-shell {
+    background: transparent;
+    box-shadow: none;
+  }
 }
 
 .sidebar-desktop {
@@ -73,6 +98,13 @@
   background: rgb(30 41 59); /* slate-800 */
   box-shadow: 0 18px 45px rgba(15, 23, 42, 0.55);
 }
+@media (max-width: 640px) {
+  .tasks-shell {
+    padding: 1rem 0.75rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+  }
+}
 
 .section-title {
   margin-bottom: 0.75rem;
@@ -80,6 +112,12 @@
   color: var(--color-primario);
 }
 .dark .section-title { color: var(--color-blue-300); }
+@media (max-width: 640px) {
+  .section-title {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+  }
+}
 
 .row { display: flex; align-items: center; gap: 0.75rem; }
 .stack { display: flex; flex-direction: column; gap: 0.875rem; }
@@ -237,6 +275,16 @@
   }
 }
 
+/* Botón editar proyecto: visible solo en pantallas pequeñas */
+.project-edit-btn {
+  display: inline-flex;
+}
+@media (min-width: 768px) {
+  .project-edit-btn {
+    display: none;
+  }
+}
+
 .project-row { display: flex; align-items: center; gap: 0.5rem; }
 .project-btn {
   flex: 1;
@@ -275,14 +323,4 @@
   background: #E3F2FD;
 }
 .dark .modal-option.is-selected { background: rgb(51 65 85); border-color: var(--color-blue-300); }
-
-/* Selector de proyectos en móvil */
-.project-select-mobile {
-  display: none;
-}
-@media (max-width: 640px) {
-  .project-select-mobile {
-    display: block;
-  }
-}
 
