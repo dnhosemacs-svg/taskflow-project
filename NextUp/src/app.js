@@ -332,7 +332,9 @@ function openMoveTaskModal(options) {
       moveTaskModalBackdropEl?.removeEventListener('click', onCancel);
       moveTaskModalConfirmBtn.removeEventListener('click', onConfirm);
       window.removeEventListener('keydown', onKeyDown);
-      setPopupOpen(false);
+      // Importante: no usamos setPopupOpen aquí para que el
+      // fondo de la página no se oscurezca al abrir/cerrar
+      // el popup de mover tareas.
     };
 
     const finish = (value) => {
@@ -369,7 +371,6 @@ function openMoveTaskModal(options) {
     if (firstBtn) firstBtn.click();
 
     moveTaskModalEl.classList.remove('hidden');
-    setPopupOpen(true);
     moveTaskModalCancelBtn?.addEventListener('click', onCancel);
     moveTaskModalBackdropEl?.addEventListener('click', onCancel);
     moveTaskModalConfirmBtn.addEventListener('click', onConfirm);
@@ -465,7 +466,9 @@ function openConfirmModal(options) {
       cancelBtn.removeEventListener('click', onCancel);
       backdropEl.removeEventListener('click', onCancel);
       window.removeEventListener('keydown', onKeyDown);
-      setPopupOpen(false);
+      // No tocamos `has-popup` aquí para que el fondo
+      // general de la página no se oscurezca al usar
+      // el popup genérico de confirmación.
     };
 
     const finish = (value) => {
@@ -481,7 +484,8 @@ function openConfirmModal(options) {
     };
 
     modal.classList.remove('hidden');
-    setPopupOpen(true);
+    // No marcamos `has-popup` al abrir: solo usamos
+    // el propio backdrop del modal para el efecto visual.
     cancelBtn.addEventListener('click', onCancel);
     acceptBtn.addEventListener('click', onAccept);
     backdropEl.addEventListener('click', onCancel);
@@ -1381,7 +1385,70 @@ function renderProjects() {
  * @returns {void}
  */
 function addProjectFromPrompt() {
-  // Crear proyecto: abrimos modal centrado, creamos, persistimos y activamos.
+  // Modo inline (app principal): crear proyecto directamente en la lista como un input editable.
+  if (inlineProjectRename && (projectListEl || projectListMobileEl)) {
+    const wasDrawerOpen = projectDrawerEl && !projectDrawerEl.classList.contains('hidden');
+    const targetUl = wasDrawerOpen && projectListMobileEl ? projectListMobileEl : projectListEl;
+    if (!targetUl) return;
+
+    // Evitar múltiples ediciones concurrentes.
+    const existingEditing = targetUl.querySelector('li[data-editing="true"]');
+    if (existingEditing) return;
+
+    const li = document.createElement('li');
+    li.className = 'project-row';
+    li.dataset.editing = 'true';
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'Nuevo proyecto...';
+    input.classList.add('field', 'w-full', 'project-edit-input');
+
+    li.appendChild(input);
+    targetUl.insertBefore(li, targetUl.firstChild);
+
+    const finish = (value) => {
+      if (li.dataset.editing !== 'true') return;
+      li.dataset.editing = 'false';
+
+      const name = String(value ?? '').trim();
+      if (!name) {
+        li.remove();
+        return;
+      }
+
+      const p = createProject(name);
+      projects.push(p);
+      saveState();
+      setActiveProjectId(p.id);
+    };
+
+    const cancel = () => {
+      if (li.dataset.editing !== 'true') return;
+      li.dataset.editing = 'false';
+      li.remove();
+    };
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        finish(input.value);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancel();
+      }
+    });
+
+    input.addEventListener('blur', () => {
+      finish(input.value);
+    });
+
+    input.focus();
+    input.setSelectionRange(0, input.value.length);
+    return;
+  }
+
+  // Modo modal (test-runner y compatibilidad): abrir modal centrado como antes.
   const wasDrawerOpen = projectDrawerEl && !projectDrawerEl.classList.contains('hidden');
   if (wasDrawerOpen) {
     closeProjectDrawer();
