@@ -24,6 +24,8 @@ const form = document.getElementById('formulario');
 const input = document.getElementById('entrada');
 const taskList = document.getElementById('elemento');
 const searchInput = document.getElementById('search');
+const pendingSection = document.getElementById('pending-section');
+const searchSection = document.getElementById('search-section');
 const activeProjectNameEl = document.getElementById('active-project-name');
 const activeProjectNameDesktopEl = document.getElementById('active-project-name-desktop');
 const projectListEl = document.getElementById('project-list');
@@ -341,26 +343,15 @@ function openMoveTaskModal(options) {
     options.projects.forEach((p) => {
       const row = document.createElement('button');
       row.type = 'button';
-      row.className = [
-        'w-full',
-        'text-left',
-        'px-3', 'py-2',
-        'rounded-lg',
-        'border',
-        'border-slate-200 dark:border-slate-700',
-        'bg-white dark:bg-slate-800',
-        'hover:bg-slate-100 dark:hover:bg-slate-700',
-        'transition',
-        'truncate'
-      ].join(' ');
+      row.className = 'modal-option truncate';
       row.textContent = p.name;
       row.addEventListener('click', () => {
         selectedId = p.id;
         // Marcar visualmente la opción seleccionada.
         Array.from(moveTaskModalListEl.querySelectorAll('button')).forEach((b) => {
-          b.classList.remove('border-primario', 'bg-[#E3F2FD]', 'dark:bg-slate-700');
+          b.classList.remove('is-selected');
         });
-        row.classList.add('border-primario', 'bg-[#E3F2FD]', 'dark:bg-slate-700');
+        row.classList.add('is-selected');
       });
       moveTaskModalListEl.appendChild(row);
     });
@@ -405,7 +396,7 @@ function openConfirmModal(options) {
     if (!modal) {
       modal = document.createElement('div');
       modal.id = 'confirm-modal';
-      modal.className = 'fixed inset-0 hidden z-50';
+      modal.className = 'popup-root fixed inset-0 hidden z-50 items-center justify-center';
 
       const backdrop = document.createElement('div');
       backdrop.id = 'confirm-modal-backdrop';
@@ -416,24 +407,24 @@ function openConfirmModal(options) {
 
       const panel = document.createElement('div');
       panel.id = 'confirm-modal-panel';
-      panel.className = 'w-full max-w-md bg-white dark:bg-slate-800 rounded-xl p-8 sm:p-10 flex flex-col gap-6';
+      panel.className = 'popup-panel popup-panel--modal';
 
       const msg = document.createElement('div');
       msg.id = 'confirm-modal-message';
       msg.className = 'text-base text-slate-800 dark:text-slate-100';
 
       const actions = document.createElement('div');
-      actions.className = 'flex items-center justify-end gap-3';
+      actions.className = 'row justify-end';
 
       const cancelBtn = document.createElement('button');
       cancelBtn.id = 'confirm-modal-cancel';
       cancelBtn.type = 'button';
-      cancelBtn.className = 'px-4 py-2 border-2 border-primario rounded-lg dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow hover:bg-slate-200 dark:hover:bg-slate-700 transition';
+      cancelBtn.className = 'btn btn-ghost';
 
       const acceptBtn = document.createElement('button');
       acceptBtn.id = 'confirm-modal-accept';
       acceptBtn.type = 'button';
-      acceptBtn.className = 'px-4 py-2 bg-primario text-white rounded-lg shadow hover:bg-blue-900 transition';
+      acceptBtn.className = 'btn btn-primary';
 
       actions.appendChild(cancelBtn);
       actions.appendChild(acceptBtn);
@@ -536,6 +527,31 @@ function updateCompletedVisibility() {
   list.classList.toggle('hidden', !hasItems);
 }
 
+/**
+ * Muestra/oculta la sección de pendientes según si hay tareas en el
+ * proyecto activo. Si no hay ninguna tarea pendiente, se esconde
+ * tanto el título como la lista, manteniendo la app más limpia.
+ * @returns {void}
+ */
+function updatePendingVisibility() {
+  if (!pendingSection || !taskList) return;
+  const hasPending = getVisiblePendingTasks().length > 0;
+  pendingSection.classList.toggle('hidden', !hasPending);
+}
+
+/**
+ * Muestra u oculta la barra de búsqueda según haya tareas visibles
+ * en el proyecto activo. Si no hay ninguna tarea, el buscador no
+ * aporta valor y se esconde para simplificar la interfaz.
+ * @returns {void}
+ */
+function updateSearchVisibility() {
+  if (!searchSection) return;
+  const hasVisibleTasks =
+    getVisiblePendingTasks().length > 0 || getVisibleCompletedTasks().length > 0;
+  searchSection.classList.toggle('hidden', !hasVisibleTasks);
+}
+
 // Listener para acciones dentro de "Tareas completadas" (delegación de eventos).
 // - Botón "volver": regresa la tarea a pendientes y la vuelve a persistir.
 // Nota: usamos delegación para evitar añadir listeners por cada <li>.
@@ -570,6 +586,8 @@ function updateCompletedVisibility() {
 
     // Mantiene el filtro consistente si hay texto de búsqueda.
     filterTasks();
+    updateSearchVisibility();
+    updatePendingVisibility();
   }, 200);
 });
 
@@ -621,6 +639,8 @@ taskList.addEventListener('click', function(event) {
 
     // Mantiene el filtro consistente si hay texto de búsqueda.
     filterTasks();
+    updateSearchVisibility();
+    updatePendingVisibility();
     return;
   }
 
@@ -651,6 +671,8 @@ taskList.addEventListener('click', function(event) {
       li.classList.add('opacity-0', 'translate-x-4');
       setTimeout(() => li.remove(), 200);
       filterTasks();
+      updateSearchVisibility();
+      updatePendingVisibility();
     });
     return;
   }
@@ -688,6 +710,17 @@ taskList.addEventListener('keydown', function(event) {
   }
 });
 
+// Edición rápida: doble clic sobre el texto de la tarea
+// entra en modo edición igual que el botón de lápiz.
+taskList.addEventListener('dblclick', function(event) {
+  const span = event.target.closest('span');
+  if (!span) return;
+  const li = span.closest('li');
+  if (!li) return;
+  if (li.dataset.editing === 'true') return;
+  startEdit(li);
+});
+
 // ===== Crear el elemento <li> de una tarea (utilidad compartida) =====
 /**
  * Crea y añade al DOM el elemento `<li>` para una tarea.
@@ -701,18 +734,14 @@ function createTaskElement(taskOrText) {
 
   // Creamos el <li> con clases (Tailwind) y estado inicial para animación de entrada.
   const li = document.createElement('li');
-  li.classList.add(
-    'task-item', 'flex', 'items-center', 'gap-2', 'py-2', 'px-3',
-    'bg-white', 'dark:bg-slate-700', 'rounded-lg', 'shadow-sm', 'transition-all', 'duration-200',
-    'opacity-0', 'translate-x-4'
-  );
+  li.classList.add('task-item', 'opacity-0', 'translate-x-4');
 
   // Asociamos el id de la tarea al elemento DOM.
   li.dataset.id = task.id;
 
   // Botón de borrar (lleva dentro una imagen como icono).
   const deleteBtn = document.createElement('button');
-  deleteBtn.classList.add('delete-btn', 'cursor-pointer');
+  deleteBtn.classList.add('delete-btn', 'icon-btn');
 
   const img = document.createElement('img');
   img.src = 'Imagenes/boton.png';
@@ -729,14 +758,7 @@ function createTaskElement(taskOrText) {
   // Botón para editar el texto de la tarea (sin afectar el flujo actual de crear/borrar).
   const editBtn = document.createElement('button');
   editBtn.type = 'button';
-  editBtn.classList.add(
-    'edit-btn',
-    'cursor-pointer',
-    'w-[25px]', 'h-[25px]',
-    'flex', 'items-center', 'justify-center',
-    'text-primario',
-    'dark:text-blue-300'
-  );
+  editBtn.classList.add('edit-btn', 'icon-btn');
   editBtn.setAttribute('aria-label', 'Editar');
   editBtn.title = 'Editar';
 
@@ -747,14 +769,7 @@ function createTaskElement(taskOrText) {
   // Botón "mover a proyecto"
   const moveBtn = document.createElement('button');
   moveBtn.type = 'button';
-  moveBtn.classList.add(
-    'move-btn',
-    'cursor-pointer',
-    'w-[25px]', 'h-[25px]',
-    'flex', 'items-center', 'justify-center',
-    'text-primario',
-    'dark:text-blue-300'
-  );
+  moveBtn.classList.add('move-btn', 'icon-btn');
   moveBtn.setAttribute('aria-label', 'Mover');
   moveBtn.title = 'Mover a proyecto';
 
@@ -820,13 +835,7 @@ function createCompletedTaskElement(task) {
   // - el texto va tachado (completada)
   // - no incluimos "editar" ni "borrar", solo "volver a pendientes"
   const li = document.createElement('li');
-  li.classList.add(
-    'task-item',
-    'flex', 'items-center', 'gap-2', 'py-2', 'px-3',
-    'bg-white', 'dark:bg-slate-700', 'rounded-lg', 'shadow-sm',
-    'transition-all', 'duration-200',
-    'opacity-0', 'translate-x-4'
-  );
+  li.classList.add('task-item', 'opacity-0', 'translate-x-4');
   li.dataset.id = task.id;
 
   const span = document.createElement('span');
@@ -838,14 +847,7 @@ function createCompletedTaskElement(task) {
   // cambiando únicamente el icono (arrow-go-back) y la intención (restore).
   const restoreBtn = document.createElement('button');
   restoreBtn.type = 'button';
-  restoreBtn.classList.add(
-    'restore-btn',
-    'cursor-pointer',
-    'w-[25px]', 'h-[25px]',
-    'flex', 'items-center', 'justify-center',
-    'text-primario',
-    'dark:text-blue-300'
-  );
+  restoreBtn.classList.add('restore-btn', 'icon-btn');
   restoreBtn.setAttribute('aria-label', 'Volver a pendientes');
   restoreBtn.title = 'Volver a pendientes';
 
@@ -895,18 +897,7 @@ function startEdit(li) {
   const inputEl = document.createElement('input');
   inputEl.type = 'text';
   inputEl.value = li.dataset.originalText;
-  inputEl.classList.add(
-    'edit-input',
-    'flex-1',
-    'px-3', 'py-2',
-    'border-2', 'border-primario',
-    'rounded-lg',
-    'bg-white', 'dark:bg-slate-700',
-    'text-texto', 'dark:text-slate-100',
-    'shadow-sm',
-    'focus:border-texto',
-    'transition'
-  );
+  inputEl.classList.add('edit-input', 'field', 'flex-1');
 
   span.replaceWith(inputEl);
   editBtn.setAttribute('aria-label', 'Guardar');
@@ -1013,6 +1004,8 @@ function addTask() {
   createTaskElement(task);
   saveState();
   input.value = "";
+  updateSearchVisibility();
+  updatePendingVisibility();
 }
 
 // ===== Persistencia (localStorage) =====
@@ -1159,25 +1152,13 @@ function renderProjects() {
       .sort((a, b) => a.createdAt - b.createdAt)
       .forEach((p) => {
         const li = document.createElement('li');
-        li.className = 'flex items-center gap-2';
+        li.className = 'project-row';
 
         const isInDrawerList = ul === projectListMobileEl;
 
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = [
-          'flex-1',
-          'text-left',
-          'px-3', 'py-2',
-          'rounded-lg',
-          'border',
-          p.id === activeProjectId
-            ? 'border-primario bg-[#E3F2FD] dark:bg-slate-700'
-            : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800',
-          'hover:bg-slate-100 dark:hover:bg-slate-700',
-          'transition',
-          'truncate'
-        ].join(' ');
+        btn.className = `project-btn truncate${p.id === activeProjectId ? ' is-active' : ''}`;
         btn.textContent = p.name;
         btn.addEventListener('click', () => {
           // Cambiar proyecto activo: re-renderiza listas filtradas por proyecto.
@@ -1187,7 +1168,7 @@ function renderProjects() {
 
         const renameBtn = document.createElement('button');
         renameBtn.type = 'button';
-        renameBtn.className = 'px-2 py-2 text-primario dark:text-blue-300 hover:opacity-80 transition inline-flex items-center justify-center';
+        renameBtn.className = 'icon-btn';
         renameBtn.title = 'Renombrar';
         renameBtn.setAttribute('aria-label', 'Renombrar');
 
@@ -1239,8 +1220,8 @@ function renderProjects() {
 
         const delBtn = document.createElement('button');
         delBtn.type = 'button';
-        // En claro se mantiene rojo; en oscuro igual que el lápiz (dark:text-blue-300).
-        delBtn.className = 'px-2 py-2 text-red-600 dark:text-blue-300 hover:opacity-80 transition inline-flex items-center justify-center';
+        // En claro se mantiene rojo; en oscuro igual que el resto.
+        delBtn.className = 'icon-btn text-red-600';
         delBtn.title = 'Eliminar';
         delBtn.setAttribute('aria-label', 'Eliminar');
 
@@ -1342,6 +1323,8 @@ function renderTasksForActiveProject() {
 
   updateCompletedVisibility();
   filterTasks();
+  updateSearchVisibility();
+  updatePendingVisibility();
 }
 
 // ===== Filtro/búsqueda =====
