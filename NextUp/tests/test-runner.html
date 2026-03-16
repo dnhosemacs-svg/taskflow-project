@@ -61,13 +61,16 @@
       </form>
     </div>
 
-    <!-- Modal mover tarea -->
+    <!-- Modal mover tarea (estructura alineada con index.html para que el listener
+         de "clic fuera de popup" respete los clics dentro del panel) -->
     <div id="move-task-modal" class="hidden">
       <div id="move-task-modal-backdrop"></div>
-      <div id="move-task-modal-taskname"></div>
-      <div id="move-task-modal-list"></div>
-      <button id="move-task-modal-cancel" type="button">Cancelar</button>
-      <button id="move-task-modal-confirm" type="button">Mover</button>
+      <div id="move-task-modal-panel">
+        <div id="move-task-modal-taskname"></div>
+        <div id="move-task-modal-list"></div>
+        <button id="move-task-modal-cancel" type="button">Cancelar</button>
+        <button id="move-task-modal-confirm" type="button">Mover</button>
+      </div>
     </div>
     <ul id="elemento" aria-label="Lista de tareas"></ul>
     <h2 id="completed-heading">Tareas completadas</h2>

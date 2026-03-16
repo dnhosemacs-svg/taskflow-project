@@ -415,7 +415,15 @@ async function runTests() {
 
     const st = readState();
     assert(st, 'No hay state');
-    assertEqual(st.tasks[0].projectId, 'p2', 'La tarea debería moverse a p2 en storage');
+    // Buscar explícitamente la tarea "Moverme" (o id t1) en storage,
+    // en lugar de asumir que está en la posición 0.
+    const moved = Array.isArray(st.tasks)
+      ? st.tasks.find((t) => t.id === 't1' || t.text === 'Moverme')
+      : null;
+    assert(moved, 'No se encontró la tarea "Moverme" en storage');
+    assertEqual(moved.projectId, 'p2', 'La tarea debería moverse a p2 en storage');
+
+    // La tarea debe desaparecer de la lista del proyecto activo (P1).
     assertEqual(pendingLis().length, 0, 'La tarea debería desaparecer del proyecto activo tras mover');
   });
 

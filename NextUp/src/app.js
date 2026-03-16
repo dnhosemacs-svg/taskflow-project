@@ -1027,6 +1027,20 @@ function saveState() {
     ui: { activeProjectId }
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
+  // Mantener sincronizado el almacenamiento legacy que pueden seguir usando
+  // algunos tests o entornos antiguos.
+  try {
+    const legacyTasks = tasks.map(t => ({
+      id: t.id,
+      text: t.text,
+      projectId: t.projectId
+    }));
+    localStorage.setItem(LEGACY_TASKS_KEY, JSON.stringify(legacyTasks));
+  } catch {
+    // Si algo falla (por ejemplo, localStorage no disponible en el entorno
+    // de test), no rompemos el flujo principal de guardado.
+  }
 }
 
 // Backward-compatible aliases (tests / legacy harness).
