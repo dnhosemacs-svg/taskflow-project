@@ -432,7 +432,7 @@ function openConfirmModal(options) {
       const acceptBtn = document.createElement('button');
       acceptBtn.id = 'confirm-modal-accept';
       acceptBtn.type = 'button';
-      acceptBtn.className = 'btn btn-primary';
+      acceptBtn.className = 'btn btn-eliminar';
 
       actions.appendChild(cancelBtn);
       actions.appendChild(acceptBtn);
