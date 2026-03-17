@@ -18,7 +18,14 @@
       .popup-root { display: none; }
       .popup-root:not(.hidden) { display: flex; }
 
-      /* Fondo atenuado y ocultar toggle en móvil */
+      /* Backdrop común: oscurecimiento de pantalla en todos los popups */
+      .popup-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+      }
+
+      /* Fondo atenuado del contenido cuando hay popup abierto (has-popup en html) */
       .has-popup body > *:not(.popup-root) { filter: brightness(0.35); }
       @media (max-width: 768px) { .has-popup #theme-toggle { display: none; } }
 
@@ -107,14 +114,26 @@
         <!-- Contenedor principal: buscar, añadir y listar tareas -->
         <main id="main" class="card-app">
             <div class="tasks-shell">
-                <!-- Barra superior (móvil): selector de proyectos -->
-                <div class="md:hidden mb-6">
-                    <label for="project-select-mobile" class="sr-only">Proyecto</label>
+                <!-- Barra superior (móvil): dropdown para cambiar proyecto + botón para gestionar (crear, renombrar, eliminar) -->
+                <div class="md:hidden mb-6 project-mobile-row">
+                    <label for="project-select-mobile" class="sr-only">Proyecto actual</label>
                     <select
                         id="project-select-mobile"
-                        class="field w-full project-select-mobile"
+                        class="field project-select-mobile"
                         aria-label="Seleccionar proyecto"
                     ></select>
+                    <button
+                        id="project-drawer-open"
+                        type="button"
+                        class="icon-btn project-manage-btn"
+                        aria-label="Gestionar proyectos (crear, renombrar, eliminar)"
+                        title="Gestionar proyectos"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-[18px] h-[18px]" aria-hidden="true">
+                            <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708z"/>
+                            <path d="M.5 13.5V16h2.5l7.373-7.373-2.5-2.5zM11.207 2.5l2.5 2.5-1 1-2.5-2.5z"/>
+                        </svg>
+                    </button>
                 </div>
 
                 <!-- Buscador: filtra tareas (la lógica suele estar en `app.js`) -->
@@ -156,9 +175,10 @@
 
     </div>
 
-    <!-- Drawer de proyectos (móvil) -->
+    <!-- Drawer de proyectos (móvil): misma config de oscurecimiento que el resto de popups -->
     <div id="project-drawer" class="popup-root fixed inset-0 hidden z-40 items-center justify-center">
-        <div id="project-drawer-backdrop" class="absolute inset-0 bg-black/40"></div>
+        <div id="project-drawer-backdrop" class="popup-backdrop" aria-hidden="true"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
             <div id="project-drawer-content" class="popup-panel">
                 <div class="row mb-6 w-full">
                     <h2 class="section-title mb-0">Proyectos</h2>
@@ -175,12 +195,13 @@
                     + Proyecto
                 </button>
                 <ul id="project-list-mobile" class="list-panel overflow-auto" aria-label="Lista de proyectos"></ul>
+            </div>
         </div>
     </div>
 
     <!-- Modal centrado: crear proyecto -->
     <div id="project-modal" class="popup-root fixed inset-0 hidden z-50 items-center justify-center">
-        <div id="project-modal-backdrop" class="absolute inset-0 bg-black/40"></div>
+        <div id="project-modal-backdrop" class="popup-backdrop" aria-hidden="true"></div>
         <div class="absolute inset-0 flex items-center justify-center p-4">
             <div id="project-modal-panel" class="popup-panel popup-panel--modal">
                 <h2 id="project-modal-title" class="section-title mb-0">Crear proyecto</h2>
@@ -207,7 +228,7 @@
 
     <!-- Modal centrado: mover tarea -->
     <div id="move-task-modal" class="popup-root fixed inset-0 hidden z-50 items-center justify-center">
-        <div id="move-task-modal-backdrop" class="absolute inset-0 bg-black/40"></div>
+        <div id="move-task-modal-backdrop" class="popup-backdrop" aria-hidden="true"></div>
         <div
             id="move-task-modal-panel"
             class="popup-panel popup-panel--modal"

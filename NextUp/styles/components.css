@@ -331,3 +331,28 @@
 }
 .dark .modal-option.is-selected { background: rgb(51 65 85); border-color: var(--color-blue-300); }
 
+/* Fila móvil: dropdown + Gestionar; solo en smartphone (no sobrescribir md:hidden en desktop) */
+@media (max-width: 767px) {
+  .project-mobile-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .project-select-mobile {
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+  }
+  .project-manage-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+}
+
+/* Drawer de proyectos: solo en smartphone; en pantallas grandes se usa la sidebar */
+@media (min-width: 768px) {
+  #project-drawer {
+    display: none !important;
+  }
+}
+

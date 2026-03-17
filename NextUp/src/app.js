@@ -227,17 +227,19 @@ function setActiveProjectId(id) {
   renderTasksForActiveProject();
 }
 
-// Popup de proyectos (móvil): abrir/cerrar. En escritorio se usa sidebar.
+// Popup de proyectos (móvil): abrir/cerrar. Solo visible en smartphone (en desktop se usa la sidebar).
+// Misma lógica que el popup de eliminar: solo el backdrop del propio popup oscurece la pantalla.
+const MOBILE_BREAKPOINT_PX = 768;
+
 function openProjectDrawer() {
   if (!projectDrawerEl) return;
+  if (window.innerWidth >= MOBILE_BREAKPOINT_PX) return; // solo en pantallas pequeñas
   projectDrawerEl.classList.remove('hidden');
-  setPopupOpen(true);
 }
 
 function closeProjectDrawer() {
   if (!projectDrawerEl) return;
   projectDrawerEl.classList.add('hidden');
-  setPopupOpen(false);
 }
 
 /**
@@ -1363,7 +1365,7 @@ function renderProjects() {
   renderInto(projectListEl);
   renderInto(projectListMobileEl);
 
-  // Sincronizar selector móvil (dropdown) si existe en el DOM.
+  // Sincronizar dropdown móvil (cambio rápido de proyecto).
   if (projectSelectMobileEl) {
     projectSelectMobileEl.innerHTML = '';
     projects
@@ -1543,9 +1545,15 @@ projectSelectMobileEl?.addEventListener('change', (event) => {
   setActiveProjectId(target.value);
 });
 
-// Cerrar/cancelar todos los popups activos al hacer clic fuera de cualquier panel.
+// En pantallas grandes el drawer no se usa; al redimensionar a desktop, cerrarlo.
+window.addEventListener('resize', () => {
+  if (window.innerWidth >= MOBILE_BREAKPOINT_PX && projectDrawerEl && !projectDrawerEl.classList.contains('hidden')) {
+    closeProjectDrawer();
+  }
+});
+
+// Cerrar/cancelar todos los popups al hacer clic fuera de cualquier panel.
 document.addEventListener('click', (event) => {
-  if (openPopupCount === 0) return;
   const target = event.target;
   if (!(target instanceof Element)) return;
 
