@@ -70,3 +70,9 @@ Este archivo documenta, paso a paso, los cambios de refactorización que vamos r
 - **UI**
   - El botón `.move-btn` se muestra solo en móvil (en desktop se favorece el drag & drop).
 
+- **Búsqueda**
+  - Se añadió el selector `#search-status` para filtrar resultados entre **todas / pendientes / completadas** dentro de la búsqueda.
+
+- **Tema**
+  - El botón `#theme-toggle` se movió al `header` y se posiciona a la derecha sin afectar el centrado del título.
+

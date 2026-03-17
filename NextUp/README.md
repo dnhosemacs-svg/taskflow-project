@@ -39,6 +39,7 @@ Permite crear tareas organizadas por proyectos, buscarlas, marcarlas como comple
 
 - **Búsqueda en tiempo real**:  
   - Barra de búsqueda que filtra tanto tareas pendientes como completadas del proyecto activo.  
+  - Incluye un selector para filtrar por estado: **todas / pendientes / completadas**.  
   - Muestra un mensaje de “No hay ninguna tarea con ese nombre” si no hay coincidencias.
 
 - **Persistencia en `localStorage` (estado v2)**:  
@@ -46,7 +47,7 @@ Permite crear tareas organizadas por proyectos, buscarlas, marcarlas como comple
   - Migración automática desde el formato antiguo que solo guardaba una lista de tareas simples.
 
 - **Modo claro / modo oscuro**:  
-  - Botón fijo para alternar el tema (claro/oscuro) con texto e icono reactivos.  
+  - Botón en el **header** (alineado a la derecha) para alternar el tema (claro/oscuro) con texto e icono reactivos.  
   - El tema se recuerda en `localStorage` (`theme`) y respeta `prefers-color-scheme` la primera vez.  
   - Se basa en la clase `dark` sobre `<html>` para activar estilos `dark:*` (Tailwind).
 

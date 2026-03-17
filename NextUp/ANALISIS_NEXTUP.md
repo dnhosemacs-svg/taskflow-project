@@ -20,14 +20,14 @@
 Es el “contrato” de la app: define IDs que luego el JavaScript usa para leer/escribir.
 
 - **Tema**
-  - Botón: `#theme-toggle` (texto `#theme-toggle-text` e icono `#theme-toggle-icon`)
+  - Botón (en el header): `#theme-toggle` (texto `#theme-toggle-text` e icono `#theme-toggle-icon`)
 - **Proyectos**
   - Desktop: `#project-list` + botón `#project-add`
   - Móvil: selector `#project-select-mobile`, drawer `#project-drawer` (abrir `#project-drawer-open`, cerrar `#project-drawer-close`) y lista `#project-list-mobile`
   - Modal crear/renombrar: `#project-modal` (form `#project-modal-form`, input `#project-modal-input`, botones cancelar/submit)
 - **Tareas**
   - Agregar: form `#formulario`, input `#entrada`
-  - Buscar: input `#search`
+  - Buscar: select `#search-status` + input `#search`
   - Pendientes: lista `#elemento`
   - Completadas: lista `#completed`
   - Modal mover tarea: `#move-task-modal` (lista `#move-task-modal-list`, confirmar/cancelar)
@@ -85,6 +85,7 @@ Aquí está casi todo: datos, persistencia, render y eventos.
   - arrastrar una tarea y soltarla sobre un proyecto en la lista de proyectos actualiza `task.projectId`
   - soltar sobre `+ Proyecto` crea un proyecto automáticamente y mueve la tarea a ese proyecto
 - **Buscar** (`filterTasks()`): no cambia datos; solo muestra/oculta `<li>` según texto.
+  - Además aplica el filtro de estado seleccionado en `#search-status`: todas / pendientes / completadas.
 
 ### `styles/components.css` (componentes visuales)
 Centraliza estilos reutilizables y estados:
@@ -246,6 +247,11 @@ Piensa NextUp como 4 bloques:
   - reordenar: se persiste el orden del proyecto activo leyendo el orden del DOM
   - mover a proyecto: se actualiza `task.projectId` al soltar sobre un proyecto o sobre `+ Proyecto`
 - **persistencia**: `saveState()`
+
+#### I) Búsqueda con filtro de estado
+- **evento**: input en `#search` y cambio en `#search-status`
+- **datos**: no cambia arrays; solo afecta visibilidad en DOM
+- **render**: muestra/oculta `<li>` y secciones según texto y estado (todas/pendientes/completadas)
 
 ### 7.3 Regla mental rápida
 Si cambia **proyectos/tareas/activo** → **guardar** → **actualizar UI** (repintar o modificar puntual) → **ajustar filtro + visibilidad**.
