@@ -74,6 +74,13 @@ let noResultsEl = document.getElementById('no-results');
 /** @type {string|null} */
 let draggedTaskId = null;
 
+// ===== Touch / Pointer reorder (mobile-friendly) =====
+/** @type {{ id: string, li: HTMLLIElement, pointerId: number } | null} */
+let touchDragState = null;
+
+/** @type {number|null} */
+let touchDragLongPressTimer = null;
+
 /**
  * Asegura que existe el elemento de UI `#no-results` justo debajo del buscador.
  * Si ya existe, lo reutiliza.
@@ -772,6 +779,104 @@ taskList.addEventListener('dragend', () => {
   draggedTaskId = null;
 });
 
+// ===== Touch / Pointer reorder (para pantallas táctiles) =====
+// HTML5 DnD no es fiable en móvil (especialmente iOS), así que añadimos un fallback por Pointer Events:
+// - long-press (~180ms) o arrastre inmediato
+// - reordenamiento visual durante el movimiento
+// - persistencia al soltar
+taskList.addEventListener('pointerdown', (event) => {
+  if (!(event instanceof PointerEvent)) return;
+  if (!isTouchLikePointer(event)) return;
+
+  const li = getTaskLiFromPointerEvent(event);
+  if (!li) return;
+  if (!canStartDragFromEvent(event, li)) return;
+
+  // Evitar que el navegador inicie gestos (scroll/zoom) durante reorder.
+  // Aun así, no bloqueamos todo: solo cuando se activa el drag.
+  const taskId = li.dataset.id;
+  if (!taskId) return;
+
+  // Limpiar timer previo si lo hubiera.
+  if (touchDragLongPressTimer !== null) {
+    clearTimeout(touchDragLongPressTimer);
+    touchDragLongPressTimer = null;
+  }
+
+  // Long-press para no interferir con scroll.
+  touchDragLongPressTimer = window.setTimeout(() => {
+    touchDragLongPressTimer = null;
+    touchDragState = { id: taskId, li, pointerId: event.pointerId };
+    li.classList.add('is-dragging', 'is-touch-dragging');
+    try { li.setPointerCapture(event.pointerId); } catch { /* no-op */ }
+  }, 180);
+});
+
+taskList.addEventListener('pointermove', (event) => {
+  if (!(event instanceof PointerEvent)) return;
+  if (!isTouchLikePointer(event)) return;
+
+  // Si aún no activamos drag, no hacemos nada (permite scroll normal).
+  if (!touchDragState) return;
+  if (touchDragState.pointerId !== event.pointerId) return;
+
+  event.preventDefault();
+
+  const draggingEl = touchDragState.li;
+  if (!taskList.contains(draggingEl)) return;
+
+  // Encontrar el <li> objetivo debajo del dedo.
+  const elUnder = document.elementFromPoint(event.clientX, event.clientY);
+  const targetLi = elUnder instanceof Element ? elUnder.closest('li.task-item') : null;
+  if (!(targetLi instanceof HTMLLIElement)) return;
+  if (targetLi === draggingEl) return;
+
+  // Insertar antes/después según posición del dedo respecto al target.
+  const box = targetLi.getBoundingClientRect();
+  const before = event.clientY < (box.top + box.height / 2);
+  if (before) {
+    taskList.insertBefore(draggingEl, targetLi);
+  } else {
+    taskList.insertBefore(draggingEl, targetLi.nextSibling);
+  }
+});
+
+taskList.addEventListener('pointerup', (event) => {
+  if (!(event instanceof PointerEvent)) return;
+  if (!isTouchLikePointer(event)) return;
+
+  // Si soltó antes de long-press, cancelar.
+  if (touchDragLongPressTimer !== null) {
+    clearTimeout(touchDragLongPressTimer);
+    touchDragLongPressTimer = null;
+  }
+
+  if (!touchDragState) return;
+  if (touchDragState.pointerId !== event.pointerId) return;
+
+  event.preventDefault();
+  persistPendingOrderFromDom();
+
+  touchDragState.li.classList.remove('is-dragging', 'is-touch-dragging');
+  try { touchDragState.li.releasePointerCapture(event.pointerId); } catch { /* no-op */ }
+  touchDragState = null;
+});
+
+taskList.addEventListener('pointercancel', (event) => {
+  if (!(event instanceof PointerEvent)) return;
+  if (!isTouchLikePointer(event)) return;
+
+  if (touchDragLongPressTimer !== null) {
+    clearTimeout(touchDragLongPressTimer);
+    touchDragLongPressTimer = null;
+  }
+  if (!touchDragState) return;
+  if (touchDragState.pointerId !== event.pointerId) return;
+
+  touchDragState.li.classList.remove('is-dragging', 'is-touch-dragging');
+  touchDragState = null;
+});
+
 // Atajos de teclado durante la edición:
 // - Enter: guardar cambios
 // - Escape: cancelar y restaurar el texto anterior
@@ -973,6 +1078,27 @@ function getDragAfterElement(container, clientY) {
   });
 
   return /** @type {HTMLLIElement|null} */ (closest.element);
+}
+
+/**
+ * @param {PointerEvent} event
+ * @returns {boolean}
+ */
+function isTouchLikePointer(event) {
+  // En iOS Safari a veces pointerType puede venir vacío/undefined en algunos casos raros,
+  // pero si es un PointerEvent, tratamos "pen/touch" como táctil.
+  return event.pointerType === 'touch' || event.pointerType === 'pen';
+}
+
+/**
+ * @param {PointerEvent} event
+ * @returns {HTMLLIElement|null}
+ */
+function getTaskLiFromPointerEvent(event) {
+  const t = event.target;
+  if (!(t instanceof Element)) return null;
+  const li = t.closest('li.task-item');
+  return li instanceof HTMLLIElement ? li : null;
 }
 
 // ===== Crear el elemento <li> de una tarea completada (solo UI) =====

@@ -385,6 +385,12 @@
   opacity: 0.55;
   cursor: grabbing;
 }
+.task-item.is-touch-dragging {
+  /* Reduce scroll accidental y destaca el item */
+  touch-action: none;
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.22);
+  transform: scale(1.01);
+}
 
 .icon-btn {
   width: 26px;
