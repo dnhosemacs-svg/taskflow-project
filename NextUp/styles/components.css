@@ -392,6 +392,13 @@
   transform: scale(1.01);
 }
 
+/* Mientras se reordena, bloqueamos scroll/overscroll del documento */
+html.is-reordering,
+html.is-reordering body {
+  overscroll-behavior: none;
+  touch-action: none;
+}
+
 .icon-btn {
   width: 26px;
   height: 26px;

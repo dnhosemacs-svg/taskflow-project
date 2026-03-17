@@ -96,6 +96,48 @@ let legacyTouchLongPressTimer = null;
 
 /** @type {{ x: number, y: number } | null} */
 let legacyTouchStartPoint = null;
+
+// ===== Scroll lock durante reorder (evita que se mueva la página) =====
+let reorderScrollLocked = false;
+let reorderScrollY = 0;
+
+/**
+ * Bloquea/desbloquea el scroll del documento (robusto en iOS).
+ * @param {boolean} locked
+ * @returns {void}
+ */
+function setReorderScrollLock(locked) {
+  if (locked === reorderScrollLocked) return;
+  reorderScrollLocked = locked;
+
+  const root = document.documentElement;
+  const body = document.body;
+  if (!root || !body) return;
+
+  if (locked) {
+    reorderScrollY = window.scrollY || window.pageYOffset || 0;
+    root.classList.add('is-reordering');
+
+    // iOS/Safari: fijar body para congelar scroll.
+    body.style.position = 'fixed';
+    body.style.top = `-${reorderScrollY}px`;
+    body.style.left = '0';
+    body.style.right = '0';
+    body.style.width = '100%';
+  } else {
+    root.classList.remove('is-reordering');
+
+    body.style.position = '';
+    body.style.top = '';
+    body.style.left = '';
+    body.style.right = '';
+    body.style.width = '';
+
+    if (reorderScrollY) window.scrollTo(0, reorderScrollY);
+    reorderScrollY = 0;
+  }
+}
+
 function ensureNoResultsElement() {
   if (noResultsEl) return noResultsEl;
   if (!searchInput) return null;
@@ -821,6 +863,7 @@ taskList.addEventListener('pointerdown', (event) => {
     touchDragLongPressTimer = null;
     touchDragState = { id: taskId, li, pointerId: pe.pointerId };
     li.classList.add('is-dragging', 'is-touch-dragging');
+    setReorderScrollLock(true);
     try { li.setPointerCapture(pe.pointerId); } catch { /* no-op */ }
   }, 180);
 });
@@ -879,6 +922,7 @@ taskList.addEventListener('pointerup', (event) => {
   touchDragState.li.classList.remove('is-dragging', 'is-touch-dragging');
   try { touchDragState.li.releasePointerCapture(pe.pointerId); } catch { /* no-op */ }
   touchDragState = null;
+  setReorderScrollLock(false);
 });
 
 taskList.addEventListener('pointercancel', (event) => {
@@ -897,6 +941,7 @@ taskList.addEventListener('pointercancel', (event) => {
 
   touchDragState.li.classList.remove('is-dragging', 'is-touch-dragging');
   touchDragState = null;
+  setReorderScrollLock(false);
 });
 
 // Touch Events fallback (solo si el navegador no usa Pointer Events bien).
@@ -927,6 +972,7 @@ taskList.addEventListener('touchstart', (event) => {
     legacyTouchLongPressTimer = null;
     legacyTouchDragState = { id: taskId, li, touchId: touch.identifier };
     li.classList.add('is-dragging', 'is-touch-dragging');
+    setReorderScrollLock(true);
   }, 180);
 }, { passive: true });
 
@@ -968,6 +1014,7 @@ const endLegacyTouchDrag = () => {
   legacyTouchDragState = null;
 
   window.removeEventListener('touchmove', onLegacyTouchMoveWindow, { capture: true });
+  setReorderScrollLock(false);
 };
 
 taskList.addEventListener('touchmove', (event) => {
@@ -1022,6 +1069,7 @@ taskList.addEventListener('touchcancel', () => {
   legacyTouchDragState.li.classList.remove('is-dragging', 'is-touch-dragging');
   legacyTouchDragState = null;
   window.removeEventListener('touchmove', onLegacyTouchMoveWindow, { capture: true });
+  setReorderScrollLock(false);
 }, { passive: true });
 
 // Atajos de teclado durante la edición:
