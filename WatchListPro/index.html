@@ -4,140 +4,95 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WatchListPro</title>
-    <link rel="stylesheet" href="output.css">
+    <link rel="stylesheet" href="styles/output.css">
+    <link rel="stylesheet" href="styles/components.css">
 </head>
 
-<body class="bg-[url('fondo.jpg')] text-texto font-principal p-m m-0">
+<body class="page">
 
-<header class="text-center mb-g">
-    <h1 class="text-primario font-titulos text-[60px] flex justify-center mb-g">
-        WatchList Pro
-    </h1>
-    <p class="font-titulos text-[30px] p-m w-full text-center">
-        La mejor manera de disfrutar del contenido es organizándolo.
-    </p>
+<a class="skip-link" href="#main">Saltar al contenido</a>
+
+<header class="app-header">
+    <div class="app-header-inner">
+        <h1 class="app-title">WatchList Pro</h1>
+        <p class="app-subtitle">La mejor manera de disfrutar del contenido es organizándolo.</p>
+    </div>
 </header>
 
-<main class="flex max-md:flex-col max-md:gap-5">
+<main id="main" class="app-shell">
 
     <!-- Barra lateral -->
-    <aside class="ml-[5px] flex flex-col w-[100px] shrink-0 max-md:w-full max-md:items-center">
-
-        <div class="w-[100px] bg-[#825327] p-m max-md:w-full">
-            <h2 class="text-primario font-titulos mb-m">Listas</h2>
+    <aside class="sidebar">
+        <div class="sidebar-head">
+            <h2 class="section-title mb-0">Listas</h2>
         </div>
-
-        <div class="flex-1 p-m">
-            <ul class="space-y-2">
-                <li>Vistos</li>
-                <li>Por ver</li>
-                <li>Guardados</li>
-            </ul>
+        <div class="sidebar-body">
+            <div class="stack">
+                <button class="filter-btn is-active" type="button" data-filter="all">Todas</button>
+                <button class="filter-btn" type="button" data-filter="saw">Vistos</button>
+                <button class="filter-btn" type="button" data-filter="to-do">Por ver</button>
+                <button class="filter-btn" type="button" data-filter="saved">Guardados</button>
+            </div>
         </div>
     </aside>
 
     <!-- Contenido principal -->
-    <section class="flex-1">
-        <div class="w-[1000px] flex flex-wrap justify-around max-md:flex-col max-md:gap-10">
+    <section class="content">
+        <section class="panel panel--form" aria-label="Añadir contenido">
+            <h2 class="section-title">Añadir</h2>
+            <form id="item-form" class="form-grid">
+                <label class="sr-only" for="item-type">Tipo</label>
+                <select id="item-type" class="field" aria-label="Tipo">
+                    <option value="series">Serie</option>
+                    <option value="movies">Película</option>
+                </select>
 
-            <!-- SERIES -->
-            <aside class="bg-[rgba(130,92,26,0.698)] border-[5px] border-[rgba(130,92,26,0.698)] rounded-[15px] w-[400px] p-m">
-                <h2 class="text-primario font-titulos mb-m">Series</h2>
+                <label class="sr-only" for="item-title">Título</label>
+                <input id="item-title" class="field" type="text" placeholder="Título..." required>
 
-                <ul class="space-y-2">
+                <label class="sr-only" for="item-genre">Categoría</label>
+                <input id="item-genre" class="field" type="text" placeholder="Categoría (opcional)">
 
-                    <li class="flex justify-between items-center p-m cursor-pointer" data-status="saw">
-                        <span class="flex-2 font-bold">Stranger thing</span>
-                        <span class="flex-1 text-center opacity-80">Sobrenatural</span>
-                        <span class="task-status saw flex-[0.5] px-s py-s rounded bg-alta text-[#f31800] text-center text-sm text-black">
-                            Visto
-                        </span>
-                    </li>
+                <label class="sr-only" for="item-status">Estado</label>
+                <select id="item-status" class="field" aria-label="Estado">
+                    <option value="to-do">Por ver</option>
+                    <option value="saved">Guardado</option>
+                    <option value="saw">Visto</option>
+                </select>
 
-                    <li class="flex justify-between items-center p-m cursor-pointer" data-status="to-do">
-                        <span class="flex-2 font-bold">Los Bridgerton</span>
-                        <span class="flex-1 text-center opacity-80">Romance</span>
-                        <span class="task-status to-do flex-[0.5] px-s py-s rounded bg-media text-[#decf00] text-center text-sm text-black">
-                            Por ver
-                        </span>
-                    </li>
+                <button class="btn btn-primary" type="submit">Añadir</button>
+                <button id="clear-all" class="btn btn-ghost" type="button">Borrar todo</button>
+            </form>
+        </section>
 
-                    <li class="flex justify-between items-center p-m cursor-pointer" data-status="saved">
-                        <span class="flex-2 font-bold">Vinland saga</span>
-                        <span class="flex-1 text-center opacity-80">Acción</span>
-                        <span class="task-status saved flex-[0.5] px-s py-s rounded bg-baja text-[#3cff00] text-center text-sm text-black">
-                            Guardado
-                        </span>
-                    </li>
+        <div class="panels-grid">
+            <section class="panel" aria-label="Series">
+                <div class="panel-head">
+                    <h2 class="section-title mb-0">Series</h2>
+                    <div class="panel-meta" id="series-count" aria-label="Contador series">0</div>
+                </div>
+                <ul id="series-list" class="item-list" aria-label="Lista de series"></ul>
+            </section>
 
-                </ul>
-            </aside>
-
-            <!-- PELÍCULAS -->
-            <aside class="bg-[rgba(130,92,26,0.698)] border-[5px] border-[rgba(130,92,26,0.698)] rounded-[15px] w-[400px] p-m">
-                <h2 class="text-primario font-titulos mb-m">Películas</h2>
-
-                <ul class="space-y-2">
-
-                    <li class="flex justify-between items-center p-m cursor-pointer" data-status="saw">
-                        <span class="flex-2 font-bold">La gran fuga</span>
-                        <span class="flex-1 text-center opacity-80">Acción</span>
-                        <span class="task-status saw flex-[0.5] px-s py-s rounded bg-alta text-[#f31800] text-center text-sm text-black">
-                            Visto
-                        </span>
-                    </li>
-
-                    <li class="flex justify-between items-center p-m cursor-pointer" data-status="to-do">
-                        <span class="flex-2 font-bold">The king</span>
-                        <span class="flex-1 text-center opacity-80">Bélico</span>
-                        <span class="task-status to-do flex-[0.5] px-s py-s rounded bg-media text-[#decf00] text-center text-sm text-black">
-                            Por ver
-                        </span>
-                    </li>
-
-                    <li class="flex justify-between items-center p-m cursor-pointer" data-status="saved">
-                        <span class="flex-2 font-bold">Minions</span>
-                        <span class="flex-1 text-center opacity-80">Infantil</span>
-                        <span class="task-status saved flex-[0.5] px-s py-s rounded bg-baja text-[#3cff00] text-center text-sm text-black">
-                            Guardado
-                        </span>
-                    </li>
-
-                </ul>
-            </aside>
-
+            <section class="panel" aria-label="Películas">
+                <div class="panel-head">
+                    <h2 class="section-title mb-0">Películas</h2>
+                    <div class="panel-meta" id="movies-count" aria-label="Contador películas">0</div>
+                </div>
+                <ul id="movies-list" class="item-list" aria-label="Lista de películas"></ul>
+            </section>
         </div>
     </section>
 </main>
 
-<footer class="fixed bottom-0 left-0 w-full text-center p-[15px] bg-transparent">
-    <h2 class="text-primario font-titulos">Publicidad</h2>
-    <p>Sección para alojar publicidad relevante al sitio web</p>
+<footer class="app-footer">
+    <div class="footer-inner">
+        <div class="footer-title">Publicidad</div>
+        <div class="footer-text">Sección para alojar publicidad relevante al sitio web</div>
+    </div>
 </footer>
 
-<script>
-document.querySelectorAll('.task-item, li[data-status]').forEach(item => {
-    item.addEventListener('click', () => {
-        const states = ["saw", "to-do", "saved"];
-        const labels = {
-            "saw": "Visto",
-            "to-do": "Por ver",
-            "saved": "Guardado"
-        };
-
-        let current = item.getAttribute("data-status");
-        let next = states[(states.indexOf(current) + 1) % states.length];
-
-        item.setAttribute("data-status", next);
-
-        const statusSpan = item.querySelector(".task-status");
-        statusSpan.textContent = labels[next];
-
-        statusSpan.classList.remove("saw", "to-do", "saved");
-        statusSpan.classList.add(next);
-    });
-});
-</script>
+<script src="src/app.js" defer></script>
 
 </body>
 </html>
