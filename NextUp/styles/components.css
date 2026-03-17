@@ -118,7 +118,7 @@
 
 .card-app {
   width: 100%;
-  max-width: 46.875rem; /* 750px */
+  max-width: 100%;
   padding: 2rem;
   border-radius: 0.75rem;
   background: transparent;
@@ -135,6 +135,13 @@
   .card-app {
     padding-top: 1.25rem;
   }
+  @media (max-width: 640px) {
+    .card-app {
+      width: 100%;
+      max-width: 100%;
+      padding-inline: 0;
+    }
+  }
 }
 
 .app-layout {
@@ -144,12 +151,12 @@
   padding-inline: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: clamp(1.5rem, 10vw, 12rem);
 }
 @media (max-width: 640px) {
   .app-layout {
     margin-top: 1.5rem;
-    padding-inline: 1rem;
+    padding-inline: 0rem;
     gap: 1.25rem;
   }
 }
