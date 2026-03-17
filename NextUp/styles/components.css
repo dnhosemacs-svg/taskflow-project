@@ -392,6 +392,21 @@
   transform: scale(1.01);
 }
 
+/* Elemento flotante durante drag (móvil) */
+.task-item.task-floating {
+  transition: none; /* que siga el dedo sin retraso */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.task-placeholder {
+  opacity: 0.25;
+  border: 2px dashed rgba(148, 163, 184, 0.7);
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
 /* Mientras se reordena, bloqueamos scroll/overscroll del documento */
 html.is-reordering,
 html.is-reordering body {

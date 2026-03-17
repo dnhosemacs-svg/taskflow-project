@@ -75,7 +75,7 @@ let noResultsEl = document.getElementById('no-results');
 let draggedTaskId = null;
 
 // ===== Touch / Pointer reorder (mobile-friendly) =====
-/** @type {{ id: string, li: HTMLLIElement, pointerId: number } | null} */
+/** @type {{ id: string, li: HTMLLIElement, pointerId: number, placeholder: HTMLLIElement, offsetY: number } | null} */
 let touchDragState = null;
 
 /** @type {number|null} */
@@ -88,7 +88,7 @@ let touchDragLongPressTimer = null;
  */
 
 // ===== Touch Events fallback (Safari/iOS antiguos o entornos sin Pointer Events fiables) =====
-/** @type {{ id: string, li: HTMLLIElement, touchId: number } | null} */
+/** @type {{ id: string, li: HTMLLIElement, touchId: number, placeholder: HTMLLIElement, offsetY: number } | null} */
 let legacyTouchDragState = null;
 
 /** @type {number|null} */
@@ -136,6 +136,52 @@ function setReorderScrollLock(locked) {
     if (reorderScrollY) window.scrollTo(0, reorderScrollY);
     reorderScrollY = 0;
   }
+}
+
+/**
+ * Activa el modo "drag flotante": el <li> sigue el dedo y dejamos un placeholder.
+ * @param {HTMLLIElement} li
+ * @param {number} clientY
+ * @returns {{ placeholder: HTMLLIElement, offsetY: number }}
+ */
+function enableFloatingDrag(li, clientY) {
+  const rect = li.getBoundingClientRect();
+  const offsetY = clientY - rect.top;
+
+  const placeholder = document.createElement('li');
+  placeholder.className = 'task-item task-placeholder';
+  placeholder.style.height = `${rect.height}px`;
+
+  li.insertAdjacentElement('beforebegin', placeholder);
+
+  // Convertir el elemento a "flotante"
+  li.classList.add('is-dragging', 'is-touch-dragging', 'task-floating');
+  li.style.position = 'fixed';
+  li.style.left = `${rect.left}px`;
+  li.style.top = `${rect.top}px`;
+  li.style.width = `${rect.width}px`;
+  li.style.zIndex = '9999';
+  li.style.pointerEvents = 'none';
+
+  return { placeholder, offsetY };
+}
+
+/**
+ * @param {HTMLLIElement} li
+ * @param {HTMLLIElement} placeholder
+ * @returns {void}
+ */
+function disableFloatingDrag(li, placeholder) {
+  li.classList.remove('is-dragging', 'is-touch-dragging', 'task-floating');
+  li.style.position = '';
+  li.style.left = '';
+  li.style.top = '';
+  li.style.width = '';
+  li.style.zIndex = '';
+  li.style.pointerEvents = '';
+
+  // Colocar el elemento donde estaba el placeholder.
+  placeholder.replaceWith(li);
 }
 
 function ensureNoResultsElement() {
@@ -861,8 +907,8 @@ taskList.addEventListener('pointerdown', (event) => {
   // Long-press para no interferir con scroll.
   touchDragLongPressTimer = window.setTimeout(() => {
     touchDragLongPressTimer = null;
-    touchDragState = { id: taskId, li, pointerId: pe.pointerId };
-    li.classList.add('is-dragging', 'is-touch-dragging');
+    const { placeholder, offsetY } = enableFloatingDrag(li, pe.clientY);
+    touchDragState = { id: taskId, li, pointerId: pe.pointerId, placeholder, offsetY };
     setReorderScrollLock(true);
     try { li.setPointerCapture(pe.pointerId); } catch { /* no-op */ }
   }, 180);
@@ -882,21 +928,24 @@ taskList.addEventListener('pointermove', (event) => {
   pe.preventDefault();
 
   const draggingEl = touchDragState.li;
-  if (!taskList.contains(draggingEl)) return;
+  // Mover el elemento flotante con el dedo.
+  const top = pe.clientY - touchDragState.offsetY;
+  draggingEl.style.top = `${top}px`;
 
   // Encontrar el <li> objetivo debajo del dedo.
   const elUnder = document.elementFromPoint(pe.clientX, pe.clientY);
   const targetLi = elUnder instanceof Element ? elUnder.closest('li.task-item') : null;
   if (!(targetLi instanceof HTMLLIElement)) return;
   if (targetLi === draggingEl) return;
+  if (targetLi.classList.contains('task-placeholder')) return;
 
   // Insertar antes/después según posición del dedo respecto al target.
   const box = targetLi.getBoundingClientRect();
   const before = pe.clientY < (box.top + box.height / 2);
   if (before) {
-    taskList.insertBefore(draggingEl, targetLi);
+    taskList.insertBefore(touchDragState.placeholder, targetLi);
   } else {
-    taskList.insertBefore(draggingEl, targetLi.nextSibling);
+    taskList.insertBefore(touchDragState.placeholder, targetLi.nextSibling);
   }
 });
 
@@ -917,9 +966,10 @@ taskList.addEventListener('pointerup', (event) => {
   if (touchDragState.pointerId !== pe.pointerId) return;
 
   pe.preventDefault();
+  // Soltar: colocar el <li> donde está el placeholder y persistir.
+  disableFloatingDrag(touchDragState.li, touchDragState.placeholder);
   persistPendingOrderFromDom();
 
-  touchDragState.li.classList.remove('is-dragging', 'is-touch-dragging');
   try { touchDragState.li.releasePointerCapture(pe.pointerId); } catch { /* no-op */ }
   touchDragState = null;
   setReorderScrollLock(false);
@@ -939,7 +989,8 @@ taskList.addEventListener('pointercancel', (event) => {
   if (!touchDragState) return;
   if (touchDragState.pointerId !== pe.pointerId) return;
 
-  touchDragState.li.classList.remove('is-dragging', 'is-touch-dragging');
+  // Cancel: restaurar posición original (placeholder).
+  disableFloatingDrag(touchDragState.li, touchDragState.placeholder);
   touchDragState = null;
   setReorderScrollLock(false);
 });
@@ -970,8 +1021,8 @@ taskList.addEventListener('touchstart', (event) => {
 
   legacyTouchLongPressTimer = window.setTimeout(() => {
     legacyTouchLongPressTimer = null;
-    legacyTouchDragState = { id: taskId, li, touchId: touch.identifier };
-    li.classList.add('is-dragging', 'is-touch-dragging');
+    const { placeholder, offsetY } = enableFloatingDrag(li, touch.clientY);
+    legacyTouchDragState = { id: taskId, li, touchId: touch.identifier, placeholder, offsetY };
     setReorderScrollLock(true);
   }, 180);
 }, { passive: true });
@@ -988,17 +1039,20 @@ const onLegacyTouchMoveWindow = (event) => {
   event.preventDefault();
 
   const draggingEl = legacyTouchDragState.li;
-  if (!taskList.contains(draggingEl)) return;
+  // Mover el elemento flotante con el dedo.
+  const top = touch.clientY - legacyTouchDragState.offsetY;
+  draggingEl.style.top = `${top}px`;
 
   const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
   const targetLi = elUnder instanceof Element ? elUnder.closest('li.task-item') : null;
   if (!(targetLi instanceof HTMLLIElement)) return;
   if (targetLi === draggingEl) return;
+  if (targetLi.classList.contains('task-placeholder')) return;
 
   const box = targetLi.getBoundingClientRect();
   const before = touch.clientY < (box.top + box.height / 2);
-  if (before) taskList.insertBefore(draggingEl, targetLi);
-  else taskList.insertBefore(draggingEl, targetLi.nextSibling);
+  if (before) taskList.insertBefore(legacyTouchDragState.placeholder, targetLi);
+  else taskList.insertBefore(legacyTouchDragState.placeholder, targetLi.nextSibling);
 };
 
 const endLegacyTouchDrag = () => {
@@ -1009,8 +1063,8 @@ const endLegacyTouchDrag = () => {
   legacyTouchStartPoint = null;
 
   if (!legacyTouchDragState) return;
+  disableFloatingDrag(legacyTouchDragState.li, legacyTouchDragState.placeholder);
   persistPendingOrderFromDom();
-  legacyTouchDragState.li.classList.remove('is-dragging', 'is-touch-dragging');
   legacyTouchDragState = null;
 
   window.removeEventListener('touchmove', onLegacyTouchMoveWindow, { capture: true });
@@ -1066,7 +1120,7 @@ taskList.addEventListener('touchcancel', () => {
   }
   legacyTouchStartPoint = null;
   if (!legacyTouchDragState) return;
-  legacyTouchDragState.li.classList.remove('is-dragging', 'is-touch-dragging');
+  disableFloatingDrag(legacyTouchDragState.li, legacyTouchDragState.placeholder);
   legacyTouchDragState = null;
   window.removeEventListener('touchmove', onLegacyTouchMoveWindow, { capture: true });
   setReorderScrollLock(false);
