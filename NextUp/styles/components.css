@@ -444,6 +444,16 @@ html.is-reordering body {
   }
 }
 
+/* Botón mover tarea: solo visible en móviles (en desktop se mueve por drag & drop) */
+.move-btn {
+  display: none;
+}
+@media (max-width: 640px) {
+  .move-btn {
+    display: inline-flex;
+  }
+}
+
 /* Botón editar proyecto: visible solo en pantallas pequeñas */
 .project-edit-btn {
   display: inline-flex;
