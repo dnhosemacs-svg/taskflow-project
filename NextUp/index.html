@@ -30,6 +30,19 @@
     <header class="app-header">
         <!-- Título principal visible -->
         <h1 class="app-title">NextUp</h1>
+
+        <!-- Botón de tema (modo claro/oscuro) -->
+        <button
+            id="theme-toggle"
+            class="theme-toggle-btn"
+        >
+            <span id="theme-toggle-text">Modo oscuro</span>
+            <span
+                id="theme-toggle-icon"
+                data-icon="moon"
+                aria-hidden="true"
+            ></span>
+        </button>
     </header>
 
     <!-- Bloque de prueba (comentado). Útil para verificar dark mode rápidamente. -->
@@ -39,29 +52,6 @@
 
     <!-- Contenedor principal: proyectos + tareas (responsive, ancho contenido como antes) -->
     <main id="main" class="card-app">
-
-        <!--
-            Botón de tema (modo claro/oscuro)
-            - `id="theme-toggle"`: lo usa el script para escuchar el click y actualizar el texto.
-            - `fixed top-4 right-4`: lo fija en la esquina superior derecha, fuera del flujo normal.
-        -->
-    <button
-        id="theme-toggle"
-        class="theme-toggle-btn"
-    >
-        <!-- Texto del botón (en móvil se oculta por CSS) -->
-        <span id="theme-toggle-text">Modo oscuro</span>
-        <!--
-            Icono del botón (solo visible en móvil):
-            - Es un <span> con máscara CSS (no un <img>) para poder "tintar" el icono.
-            - data-icon alterna entre "moon" y "sun" según el tema actual.
-        -->
-        <span
-            id="theme-toggle-icon"
-            data-icon="moon"
-            aria-hidden="true"
-        ></span>
-    </button>
 
     <!-- Layout principal: sidebar izquierda (desktop) + contenedor de tareas -->
     <div class="app-layout">
