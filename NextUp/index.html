@@ -97,6 +97,12 @@
                 <!-- Buscador: filtra tareas (la lógica suele estar en `app.js`) -->
                 <section id="search-section">
                     <h2 class="section-title">Buscar</h2>
+                    <label for="search-status" class="sr-only">Filtrar por estado</label>
+                    <select id="search-status" class="field mb-3" aria-label="Filtrar por estado">
+                        <option value="all">Todas</option>
+                        <option value="pending">Pendientes</option>
+                        <option value="completed">Completadas</option>
+                    </select>
                     <input 
                         type="text" 
                         id="search" 

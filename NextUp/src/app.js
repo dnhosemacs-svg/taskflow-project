@@ -24,6 +24,7 @@ const form = document.getElementById('formulario');
 const input = document.getElementById('entrada');
 const taskList = document.getElementById('elemento');
 const searchInput = document.getElementById('search');
+const searchStatusSelect = document.getElementById('search-status');
 const pendingSection = document.getElementById('pending-section');
 const searchSection = document.getElementById('search-section');
 const activeProjectNameEl = document.getElementById('active-project-name');
@@ -1092,6 +1093,7 @@ form.addEventListener('submit', function(event) {
 
 // Al escribir en el buscador: filtramos la lista en tiempo real.
 searchInput.addEventListener('input', filterTasks);
+searchStatusSelect?.addEventListener('change', filterTasks);
 
 // Click simple en el texto => completar.
 // Usamos un pequeño delay para no romper el doble clic (que edita).
@@ -2268,6 +2270,14 @@ function renderTasksForActiveProject() {
  */
 function filterTasks() {
   const searchText = searchInput.value.toLowerCase();
+  const statusScope =
+    searchStatusSelect instanceof HTMLSelectElement
+      ? searchStatusSelect.value
+      : 'all';
+
+  const shouldIncludePending = statusScope === 'all' || statusScope === 'pending';
+  const shouldIncludeCompleted = statusScope === 'all' || statusScope === 'completed';
+
   const pendingItems = taskList.getElementsByTagName('li');
   const completed = document.getElementById('completed');
   const completedItems = completed ? completed.getElementsByTagName('li') : [];
@@ -2284,8 +2294,37 @@ function filterTasks() {
     li.style.display = matches ? 'flex' : 'none';
   };
 
-  Array.from(pendingItems).forEach(applyFilter);
-  Array.from(completedItems).forEach(applyFilter);
+  if (shouldIncludePending) {
+    Array.from(pendingItems).forEach(applyFilter);
+  } else {
+    Array.from(pendingItems).forEach((li) => {
+      li.classList.add('hidden');
+      li.style.display = 'none';
+    });
+  }
+
+  if (shouldIncludeCompleted) {
+    Array.from(completedItems).forEach(applyFilter);
+  } else {
+    Array.from(completedItems).forEach((li) => {
+      li.classList.add('hidden');
+      li.style.display = 'none';
+    });
+  }
+
+  // Ocultar/mostrar secciones completas según el scope (sin alterar la lógica base de visibilidad).
+  if (pendingSection) {
+    pendingSection.classList.toggle('hidden', !shouldIncludePending || getVisiblePendingTasks().length === 0);
+  }
+  const completedHeadingEl = document.getElementById('completed-heading');
+  if (completedHeadingEl) {
+    const hasCompleted = getVisibleCompletedTasks().length > 0;
+    completedHeadingEl.classList.toggle('hidden', !shouldIncludeCompleted || !hasCompleted);
+  }
+  if (completed) {
+    const hasCompleted = getVisibleCompletedTasks().length > 0;
+    completed.classList.toggle('hidden', !shouldIncludeCompleted || !hasCompleted);
+  }
 
   if (messageEl) {
     const hasQuery = searchText.trim().length > 0;
