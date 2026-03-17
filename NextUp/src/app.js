@@ -86,6 +86,13 @@ let touchDragLongPressTimer = null;
  * Si ya existe, lo reutiliza.
  * @returns {HTMLElement|null}
  */
+
+// ===== Touch Events fallback (Safari/iOS antiguos o entornos sin Pointer Events fiables) =====
+/** @type {{ id: string, li: HTMLLIElement, touchId: number } | null} */
+let legacyTouchDragState = null;
+
+/** @type {number|null} */
+let legacyTouchLongPressTimer = null;
 function ensureNoResultsElement() {
   if (noResultsEl) return noResultsEl;
   if (!searchInput) return null;
@@ -785,12 +792,15 @@ taskList.addEventListener('dragend', () => {
 // - reordenamiento visual durante el movimiento
 // - persistencia al soltar
 taskList.addEventListener('pointerdown', (event) => {
-  if (!(event instanceof PointerEvent)) return;
-  if (!isTouchLikePointer(event)) return;
+  if (!event || typeof event !== 'object') return;
+  if (!('pointerType' in event)) return;
+  /** @type {PointerEvent} */
+  const pe = /** @type {any} */ (event);
+  if (!isTouchLikePointer(pe)) return;
 
-  const li = getTaskLiFromPointerEvent(event);
+  const li = getTaskLiFromPointerEvent(pe);
   if (!li) return;
-  if (!canStartDragFromEvent(event, li)) return;
+  if (!canStartDragFromEvent(pe, li)) return;
 
   // Evitar que el navegador inicie gestos (scroll/zoom) durante reorder.
   // Aun así, no bloqueamos todo: solo cuando se activa el drag.
@@ -806,34 +816,37 @@ taskList.addEventListener('pointerdown', (event) => {
   // Long-press para no interferir con scroll.
   touchDragLongPressTimer = window.setTimeout(() => {
     touchDragLongPressTimer = null;
-    touchDragState = { id: taskId, li, pointerId: event.pointerId };
+    touchDragState = { id: taskId, li, pointerId: pe.pointerId };
     li.classList.add('is-dragging', 'is-touch-dragging');
-    try { li.setPointerCapture(event.pointerId); } catch { /* no-op */ }
+    try { li.setPointerCapture(pe.pointerId); } catch { /* no-op */ }
   }, 180);
 });
 
 taskList.addEventListener('pointermove', (event) => {
-  if (!(event instanceof PointerEvent)) return;
-  if (!isTouchLikePointer(event)) return;
+  if (!event || typeof event !== 'object') return;
+  if (!('pointerType' in event)) return;
+  /** @type {PointerEvent} */
+  const pe = /** @type {any} */ (event);
+  if (!isTouchLikePointer(pe)) return;
 
   // Si aún no activamos drag, no hacemos nada (permite scroll normal).
   if (!touchDragState) return;
-  if (touchDragState.pointerId !== event.pointerId) return;
+  if (touchDragState.pointerId !== pe.pointerId) return;
 
-  event.preventDefault();
+  pe.preventDefault();
 
   const draggingEl = touchDragState.li;
   if (!taskList.contains(draggingEl)) return;
 
   // Encontrar el <li> objetivo debajo del dedo.
-  const elUnder = document.elementFromPoint(event.clientX, event.clientY);
+  const elUnder = document.elementFromPoint(pe.clientX, pe.clientY);
   const targetLi = elUnder instanceof Element ? elUnder.closest('li.task-item') : null;
   if (!(targetLi instanceof HTMLLIElement)) return;
   if (targetLi === draggingEl) return;
 
   // Insertar antes/después según posición del dedo respecto al target.
   const box = targetLi.getBoundingClientRect();
-  const before = event.clientY < (box.top + box.height / 2);
+  const before = pe.clientY < (box.top + box.height / 2);
   if (before) {
     taskList.insertBefore(draggingEl, targetLi);
   } else {
@@ -842,8 +855,11 @@ taskList.addEventListener('pointermove', (event) => {
 });
 
 taskList.addEventListener('pointerup', (event) => {
-  if (!(event instanceof PointerEvent)) return;
-  if (!isTouchLikePointer(event)) return;
+  if (!event || typeof event !== 'object') return;
+  if (!('pointerType' in event)) return;
+  /** @type {PointerEvent} */
+  const pe = /** @type {any} */ (event);
+  if (!isTouchLikePointer(pe)) return;
 
   // Si soltó antes de long-press, cancelar.
   if (touchDragLongPressTimer !== null) {
@@ -852,30 +868,112 @@ taskList.addEventListener('pointerup', (event) => {
   }
 
   if (!touchDragState) return;
-  if (touchDragState.pointerId !== event.pointerId) return;
+  if (touchDragState.pointerId !== pe.pointerId) return;
 
-  event.preventDefault();
+  pe.preventDefault();
   persistPendingOrderFromDom();
 
   touchDragState.li.classList.remove('is-dragging', 'is-touch-dragging');
-  try { touchDragState.li.releasePointerCapture(event.pointerId); } catch { /* no-op */ }
+  try { touchDragState.li.releasePointerCapture(pe.pointerId); } catch { /* no-op */ }
   touchDragState = null;
 });
 
 taskList.addEventListener('pointercancel', (event) => {
-  if (!(event instanceof PointerEvent)) return;
-  if (!isTouchLikePointer(event)) return;
+  if (!event || typeof event !== 'object') return;
+  if (!('pointerType' in event)) return;
+  /** @type {PointerEvent} */
+  const pe = /** @type {any} */ (event);
+  if (!isTouchLikePointer(pe)) return;
 
   if (touchDragLongPressTimer !== null) {
     clearTimeout(touchDragLongPressTimer);
     touchDragLongPressTimer = null;
   }
   if (!touchDragState) return;
-  if (touchDragState.pointerId !== event.pointerId) return;
+  if (touchDragState.pointerId !== pe.pointerId) return;
 
   touchDragState.li.classList.remove('is-dragging', 'is-touch-dragging');
   touchDragState = null;
 });
+
+// Touch Events fallback (solo si el navegador no usa Pointer Events bien).
+// Importante: usamos {passive:false} en move para permitir preventDefault (evitar scroll durante drag).
+taskList.addEventListener('touchstart', (event) => {
+  // Si Pointer Events ya activó drag, ignorar.
+  if (touchDragState) return;
+  if (!event.touches || event.touches.length !== 1) return;
+
+  const touch = event.touches[0];
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+
+  const li = target.closest('li.task-item');
+  if (!(li instanceof HTMLLIElement)) return;
+  if (!canStartDragFromEvent(event, li)) return;
+  const taskId = li.dataset.id;
+  if (!taskId) return;
+
+  if (legacyTouchLongPressTimer !== null) {
+    clearTimeout(legacyTouchLongPressTimer);
+    legacyTouchLongPressTimer = null;
+  }
+
+  legacyTouchLongPressTimer = window.setTimeout(() => {
+    legacyTouchLongPressTimer = null;
+    legacyTouchDragState = { id: taskId, li, touchId: touch.identifier };
+    li.classList.add('is-dragging', 'is-touch-dragging');
+  }, 180);
+}, { passive: true });
+
+taskList.addEventListener('touchmove', (event) => {
+  // Si Pointer Events está manejando, no intervenir.
+  if (touchDragState) return;
+  if (!legacyTouchDragState) return;
+  if (!event.touches || event.touches.length !== 1) return;
+
+  const touch = event.touches[0];
+  if (touch.identifier !== legacyTouchDragState.touchId) return;
+
+  event.preventDefault();
+
+  const draggingEl = legacyTouchDragState.li;
+  if (!taskList.contains(draggingEl)) return;
+
+  const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+  const targetLi = elUnder instanceof Element ? elUnder.closest('li.task-item') : null;
+  if (!(targetLi instanceof HTMLLIElement)) return;
+  if (targetLi === draggingEl) return;
+
+  const box = targetLi.getBoundingClientRect();
+  const before = touch.clientY < (box.top + box.height / 2);
+  if (before) taskList.insertBefore(draggingEl, targetLi);
+  else taskList.insertBefore(draggingEl, targetLi.nextSibling);
+}, { passive: false });
+
+taskList.addEventListener('touchend', (event) => {
+  if (touchDragState) return;
+
+  if (legacyTouchLongPressTimer !== null) {
+    clearTimeout(legacyTouchLongPressTimer);
+    legacyTouchLongPressTimer = null;
+  }
+
+  if (!legacyTouchDragState) return;
+  persistPendingOrderFromDom();
+  legacyTouchDragState.li.classList.remove('is-dragging', 'is-touch-dragging');
+  legacyTouchDragState = null;
+}, { passive: true });
+
+taskList.addEventListener('touchcancel', () => {
+  if (touchDragState) return;
+  if (legacyTouchLongPressTimer !== null) {
+    clearTimeout(legacyTouchLongPressTimer);
+    legacyTouchLongPressTimer = null;
+  }
+  if (!legacyTouchDragState) return;
+  legacyTouchDragState.li.classList.remove('is-dragging', 'is-touch-dragging');
+  legacyTouchDragState = null;
+}, { passive: true });
 
 // Atajos de teclado durante la edición:
 // - Enter: guardar cambios
