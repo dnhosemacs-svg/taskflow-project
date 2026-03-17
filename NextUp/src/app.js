@@ -93,6 +93,9 @@ let legacyTouchDragState = null;
 
 /** @type {number|null} */
 let legacyTouchLongPressTimer = null;
+
+/** @type {{ x: number, y: number } | null} */
+let legacyTouchStartPoint = null;
 function ensureNoResultsElement() {
   if (noResultsEl) return noResultsEl;
   if (!searchInput) return null;
@@ -913,6 +916,8 @@ taskList.addEventListener('touchstart', (event) => {
   const taskId = li.dataset.id;
   if (!taskId) return;
 
+  legacyTouchStartPoint = { x: touch.clientX, y: touch.clientY };
+
   if (legacyTouchLongPressTimer !== null) {
     clearTimeout(legacyTouchLongPressTimer);
     legacyTouchLongPressTimer = null;
@@ -925,8 +930,7 @@ taskList.addEventListener('touchstart', (event) => {
   }, 180);
 }, { passive: true });
 
-taskList.addEventListener('touchmove', (event) => {
-  // Si Pointer Events está manejando, no intervenir.
+const onLegacyTouchMoveWindow = (event) => {
   if (touchDragState) return;
   if (!legacyTouchDragState) return;
   if (!event.touches || event.touches.length !== 1) return;
@@ -934,6 +938,7 @@ taskList.addEventListener('touchmove', (event) => {
   const touch = event.touches[0];
   if (touch.identifier !== legacyTouchDragState.touchId) return;
 
+  // Clave: bloquear scroll mientras se reordena.
   event.preventDefault();
 
   const draggingEl = legacyTouchDragState.li;
@@ -948,20 +953,62 @@ taskList.addEventListener('touchmove', (event) => {
   const before = touch.clientY < (box.top + box.height / 2);
   if (before) taskList.insertBefore(draggingEl, targetLi);
   else taskList.insertBefore(draggingEl, targetLi.nextSibling);
-}, { passive: false });
+};
 
-taskList.addEventListener('touchend', (event) => {
-  if (touchDragState) return;
-
+const endLegacyTouchDrag = () => {
   if (legacyTouchLongPressTimer !== null) {
     clearTimeout(legacyTouchLongPressTimer);
     legacyTouchLongPressTimer = null;
   }
+  legacyTouchStartPoint = null;
 
   if (!legacyTouchDragState) return;
   persistPendingOrderFromDom();
   legacyTouchDragState.li.classList.remove('is-dragging', 'is-touch-dragging');
   legacyTouchDragState = null;
+
+  window.removeEventListener('touchmove', onLegacyTouchMoveWindow, { capture: true });
+};
+
+taskList.addEventListener('touchmove', (event) => {
+  // Si Pointer Events está manejando, no intervenir.
+  if (touchDragState) return;
+  if (!event.touches || event.touches.length !== 1) return;
+
+  const touch = event.touches[0];
+
+  // Si aún no activamos drag y el usuario se mueve "mucho", asumimos scroll y cancelamos long-press.
+  if (!legacyTouchDragState && legacyTouchLongPressTimer !== null && legacyTouchStartPoint) {
+    const dx = Math.abs(touch.clientX - legacyTouchStartPoint.x);
+    const dy = Math.abs(touch.clientY - legacyTouchStartPoint.y);
+    if (dx + dy > 10) {
+      clearTimeout(legacyTouchLongPressTimer);
+      legacyTouchLongPressTimer = null;
+      legacyTouchStartPoint = null;
+    }
+    return;
+  }
+
+  // Si ya está activo el drag, dejar que el listener global maneje el movimiento.
+  if (legacyTouchDragState) {
+    // Asegurar que capturamos el movimiento aunque el dedo salga de la lista.
+    window.addEventListener('touchmove', onLegacyTouchMoveWindow, { passive: false, capture: true });
+    onLegacyTouchMoveWindow(event);
+  }
+}, { passive: false });
+
+taskList.addEventListener('touchend', (event) => {
+  if (touchDragState) return;
+
+  // Si soltó antes de activar long-press, cancelar timer.
+  if (legacyTouchLongPressTimer !== null) {
+    clearTimeout(legacyTouchLongPressTimer);
+    legacyTouchLongPressTimer = null;
+  }
+  legacyTouchStartPoint = null;
+
+  if (!legacyTouchDragState) return;
+  endLegacyTouchDrag();
 }, { passive: true });
 
 taskList.addEventListener('touchcancel', () => {
@@ -970,9 +1017,11 @@ taskList.addEventListener('touchcancel', () => {
     clearTimeout(legacyTouchLongPressTimer);
     legacyTouchLongPressTimer = null;
   }
+  legacyTouchStartPoint = null;
   if (!legacyTouchDragState) return;
   legacyTouchDragState.li.classList.remove('is-dragging', 'is-touch-dragging');
   legacyTouchDragState = null;
+  window.removeEventListener('touchmove', onLegacyTouchMoveWindow, { capture: true });
 }, { passive: true });
 
 // Atajos de teclado durante la edición:
