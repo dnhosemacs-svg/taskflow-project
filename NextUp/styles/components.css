@@ -412,6 +412,7 @@ html.is-reordering,
 html.is-reordering body {
   overscroll-behavior: none;
   touch-action: none;
+  overflow: hidden;
 }
 
 .icon-btn {

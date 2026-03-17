@@ -102,6 +102,18 @@ let reorderScrollLocked = false;
 let reorderScrollY = 0;
 
 /**
+ * iOS Safari: aunque fijes el body, puede seguir habiendo “scroll/bounce”.
+ * Este handler global corta el scroll mientras se reordena.
+ * @param {Event} e
+ * @returns {void}
+ */
+function preventGlobalScrollWhileReordering(e) {
+  if (!reorderScrollLocked) return;
+  // Solo prevenimos eventos que realmente desplazan.
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
+}
+
+/**
  * Bloquea/desbloquea el scroll del documento (robusto en iOS).
  * @param {boolean} locked
  * @returns {void}
@@ -124,6 +136,12 @@ function setReorderScrollLock(locked) {
     body.style.left = '0';
     body.style.right = '0';
     body.style.width = '100%';
+    body.style.overflow = 'hidden';
+    root.style.overflow = 'hidden';
+
+    // Corta scroll/bounce residual (iOS) mientras dure el drag.
+    document.addEventListener('touchmove', preventGlobalScrollWhileReordering, { passive: false });
+    document.addEventListener('wheel', preventGlobalScrollWhileReordering, { passive: false });
   } else {
     root.classList.remove('is-reordering');
 
@@ -132,6 +150,11 @@ function setReorderScrollLock(locked) {
     body.style.left = '';
     body.style.right = '';
     body.style.width = '';
+    body.style.overflow = '';
+    root.style.overflow = '';
+
+    document.removeEventListener('touchmove', preventGlobalScrollWhileReordering);
+    document.removeEventListener('wheel', preventGlobalScrollWhileReordering);
 
     if (reorderScrollY) window.scrollTo(0, reorderScrollY);
     reorderScrollY = 0;
