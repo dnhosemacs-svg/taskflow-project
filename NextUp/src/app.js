@@ -153,6 +153,78 @@ const reorderScrollLock = (() => {
 })();
 
 /**
+ * Lee el id de tarea arrastrada (HTML5 DnD).
+ * @param {DragEvent} event
+ * @returns {string|null}
+ */
+function getDraggedTaskIdFromDataTransfer(event) {
+  try {
+    const dt = event.dataTransfer;
+    if (!dt) return draggedTaskId ?? null;
+    const id = (
+      dt.getData('application/x-nextup-task-id') ||
+      dt.getData('text/plain') ||
+      null
+    );
+    // En algunos navegadores el getData en drop/dragover puede venir vacío.
+    return id || draggedTaskId || null;
+  } catch {
+    return draggedTaskId ?? null;
+  }
+}
+
+/**
+ * Genera un nombre de proyecto "Nuevo proyecto N" sin colisionar con existentes.
+ * @returns {string}
+ */
+function generateAutoProjectName() {
+  const base = 'Nuevo proyecto';
+  const existing = new Set(projects.map(p => p.name.trim().toLowerCase()));
+  if (!existing.has(base.toLowerCase())) return base;
+  for (let i = 2; i < 5000; i += 1) {
+    const candidate = `${base} ${i}`;
+    if (!existing.has(candidate.toLowerCase())) return candidate;
+  }
+  return `${base} ${Date.now()}`;
+}
+
+/**
+ * Mueve una tarea a un proyecto (persistiendo y actualizando UI).
+ * @param {string} taskId
+ * @param {string} targetProjectId
+ * @param {{ sourceLi?: HTMLLIElement | null }} [options]
+ * @returns {void}
+ */
+function moveTaskToProject(taskId, targetProjectId, options) {
+  const task = tasks.find(t => t.id === taskId);
+  if (!task) return;
+  if (task.projectId === targetProjectId) return;
+
+  const prevProjectId = task.projectId;
+  task.projectId = targetProjectId;
+  saveState();
+
+  // Si la tarea estaba visible en el proyecto activo y se movió fuera, animar salida.
+  if (prevProjectId === activeProjectId) {
+    const li = options?.sourceLi ?? taskList?.querySelector(`li[data-id="${taskId}"]`);
+    if (li instanceof HTMLLIElement) {
+      li.classList.add('opacity-0', 'translate-x-4');
+      setTimeout(() => li.remove(), 200);
+    }
+  }
+
+  // Si el destino es el proyecto activo, renderizarla en pendientes.
+  if (targetProjectId === activeProjectId) {
+    const moved = tasks.find(t => t.id === taskId);
+    if (moved) createTaskElement(moved);
+  }
+
+  filterTasks();
+  updateSearchVisibility();
+  updatePendingVisibility();
+}
+
+/**
  * Activa el modo "drag flotante": el <li> sigue el dedo y dejamos un placeholder.
  * @param {HTMLLIElement} li
  * @param {number} clientY
@@ -1165,6 +1237,76 @@ taskList.addEventListener('dragend', () => {
   draggedTaskId = null;
 });
 
+// ===== Drag & drop (escritorio): soltar sobre proyectos para mover =====
+/**
+ * @param {DragEvent} event
+ * @returns {HTMLLIElement|null}
+ */
+function getDraggingTaskLiFromDom(event) {
+  const id = getDraggedTaskIdFromDataTransfer(event);
+  if (!id) return null;
+  const li = taskList?.querySelector(`li[data-id="${id}"]`);
+  return li instanceof HTMLLIElement ? li : null;
+}
+
+/**
+ * @param {DragEvent} event
+ * @returns {string|null}
+ */
+function getDropTargetProjectId(event) {
+  const target = event.target;
+  if (!(target instanceof Element)) return null;
+  const btn = target.closest('button.project-btn');
+  const projectId = btn?.dataset?.projectId;
+  return typeof projectId === 'string' && projectId ? projectId : null;
+}
+
+// Permitir drop sobre lista de proyectos (desktop + mobile drawer).
+[projectListEl, projectListMobileEl].forEach((ul) => {
+  if (!ul) return;
+
+  ul.addEventListener('dragover', (event) => {
+    // Solo aceptar drops si se está arrastrando una tarea.
+    if (!draggedTaskId && !getDraggedTaskIdFromDataTransfer(event)) return;
+    event.preventDefault();
+  });
+
+  ul.addEventListener('drop', (event) => {
+    const taskId = getDraggedTaskIdFromDataTransfer(event);
+    if (!taskId) return;
+    const targetProjectId = getDropTargetProjectId(event);
+    if (!targetProjectId) return;
+    event.preventDefault();
+    event.stopPropagation();
+
+    moveTaskToProject(taskId, targetProjectId, { sourceLi: getDraggingTaskLiFromDom(event) });
+  });
+});
+
+// Drop sobre "+ Proyecto": crear proyecto automáticamente y mover tarea ahí.
+[projectAddBtn, projectAddMobileBtn].forEach((btn) => {
+  if (!btn) return;
+
+  btn.addEventListener('dragover', (event) => {
+    if (!draggedTaskId && !getDraggedTaskIdFromDataTransfer(event)) return;
+    event.preventDefault();
+  });
+
+  btn.addEventListener('drop', (event) => {
+    const taskId = getDraggedTaskIdFromDataTransfer(event);
+    if (!taskId) return;
+    event.preventDefault();
+    event.stopPropagation();
+
+    const p = createProject(generateAutoProjectName());
+    projects.push(p);
+    saveState();
+    renderProjects();
+
+    moveTaskToProject(taskId, p.id, { sourceLi: getDraggingTaskLiFromDom(event) });
+  });
+});
+
 // Touch reorder (móvil/tablet): Pointer Events + Touch fallback (misma UX).
 const touchReorderController = setupTouchReorder(taskList);
 
@@ -1731,6 +1873,7 @@ function renderProjects() {
         btn.type = 'button';
         btn.className = `project-btn truncate${p.id === activeProjectId ? ' is-active' : ''}`;
         btn.textContent = p.name;
+        btn.dataset.projectId = p.id;
 
         const renameBtn = document.createElement('button');
         renameBtn.type = 'button';
