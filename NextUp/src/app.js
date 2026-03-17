@@ -1093,8 +1093,78 @@ form.addEventListener('submit', function(event) {
 // Al escribir en el buscador: filtramos la lista en tiempo real.
 searchInput.addEventListener('input', filterTasks);
 
+// Click simple en el texto => completar.
+// Usamos un pequeño delay para no romper el doble clic (que edita).
+const COMPLETE_CLICK_DELAY_MS = 230;
+/** @type {Map<string, number>} */
+const pendingCompleteTimersByTaskId = new Map();
+
+/**
+ * Programa el completado de una tarea asociada a un <li>.
+ * @param {HTMLLIElement} li
+ * @returns {void}
+ */
+function scheduleCompleteFromLi(li) {
+  const id = li.dataset.id;
+  if (!id) return;
+  if (li.dataset.editing === 'true') return;
+
+  // Evitar duplicados si el usuario hace varios clicks rápidos.
+  const existing = pendingCompleteTimersByTaskId.get(id);
+  if (existing) {
+    clearTimeout(existing);
+    pendingCompleteTimersByTaskId.delete(id);
+  }
+
+  const timer = window.setTimeout(() => {
+    pendingCompleteTimersByTaskId.delete(id);
+
+    const idx = tasks.findIndex(task => task.id === id);
+    if (idx === -1) return;
+
+    const [removed] = tasks.splice(idx, 1);
+    completedTasks.push(removed);
+    saveState();
+    if (removed.projectId === activeProjectId) createCompletedTaskElement(removed);
+
+    li.classList.add('opacity-0', 'translate-x-4');
+    setTimeout(() => li.remove(), 200);
+
+    filterTasks();
+    updateSearchVisibility();
+    updatePendingVisibility();
+  }, COMPLETE_CLICK_DELAY_MS);
+
+  pendingCompleteTimersByTaskId.set(id, timer);
+}
+
+/**
+ * Cancela el completado pendiente (si existe) para una tarea.
+ * @param {string} taskId
+ * @returns {void}
+ */
+function cancelScheduledComplete(taskId) {
+  const t = pendingCompleteTimersByTaskId.get(taskId);
+  if (!t) return;
+  clearTimeout(t);
+  pendingCompleteTimersByTaskId.delete(taskId);
+}
+
 // Delegación de eventos: un solo listener en la <ul> para manejar acciones por tarea.
 taskList.addEventListener('click', function(event) {
+  // Clic en el texto (span) => completar (con delay para permitir doble clic).
+  const textSpan = event.target.closest('span');
+  if (textSpan) {
+    const li = textSpan.closest('li');
+    if (li instanceof HTMLLIElement) {
+      // Si el click viene desde un botón dentro del <li>, no completar.
+      if (!event.target.closest('button') && !event.target.closest('input, textarea, select')) {
+        scheduleCompleteFromLi(li);
+        return;
+      }
+    }
+  }
+
   // Buscamos si el click ocurrió (o burbujeó) desde un elemento con clase `.delete-btn`.
   const deleteBtn = event.target.closest('.delete-btn');
   if (deleteBtn) {
@@ -1337,6 +1407,7 @@ taskList.addEventListener('dblclick', function(event) {
   const li = span.closest('li');
   if (!li) return;
   if (li.dataset.editing === 'true') return;
+  if (li.dataset.id) cancelScheduledComplete(li.dataset.id);
   startEdit(li);
 });
 
