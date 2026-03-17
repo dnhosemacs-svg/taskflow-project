@@ -70,6 +70,10 @@ const completedHeading = document.getElementById('completed-heading');
 // Se crea dinámicamente (sin tocar el HTML) y se muestra cuando el filtro no devuelve coincidencias.
 let noResultsEl = document.getElementById('no-results');
 
+// ===== Drag & drop (reordenar tareas pendientes) =====
+/** @type {string|null} */
+let draggedTaskId = null;
+
 /**
  * Asegura que existe el elemento de UI `#no-results` justo debajo del buscador.
  * Si ya existe, lo reutiliza.
@@ -714,6 +718,60 @@ taskList.addEventListener('click', function(event) {
   }
 });
 
+// ===== Drag & drop (reordenar pendientes) =====
+taskList.addEventListener('dragstart', (event) => {
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+
+  const li = target.closest('li.task-item');
+  if (!(li instanceof HTMLLIElement)) return;
+
+  if (!canStartDragFromEvent(event, li)) {
+    event.preventDefault();
+    return;
+  }
+
+  draggedTaskId = li.dataset.id ?? null;
+  li.classList.add('is-dragging');
+
+  try {
+    if (event.dataTransfer) {
+      event.dataTransfer.setData('text/plain', draggedTaskId ?? '');
+      event.dataTransfer.setData('application/x-nextup-task-id', draggedTaskId ?? '');
+      event.dataTransfer.effectAllowed = 'move';
+    }
+  } catch {
+    // no-op
+  }
+});
+
+taskList.addEventListener('dragover', (event) => {
+  if (!draggedTaskId) return;
+  event.preventDefault();
+
+  const draggingEl = taskList.querySelector('li.task-item.is-dragging');
+  if (!(draggingEl instanceof HTMLLIElement)) return;
+
+  const afterEl = getDragAfterElement(taskList, event.clientY);
+  if (!afterEl) {
+    taskList.appendChild(draggingEl);
+  } else if (afterEl !== draggingEl) {
+    taskList.insertBefore(draggingEl, afterEl);
+  }
+});
+
+taskList.addEventListener('drop', (event) => {
+  if (!draggedTaskId) return;
+  event.preventDefault();
+  persistPendingOrderFromDom();
+});
+
+taskList.addEventListener('dragend', () => {
+  const draggingEl = taskList.querySelector('li.task-item.is-dragging');
+  if (draggingEl) draggingEl.classList.remove('is-dragging');
+  draggedTaskId = null;
+});
+
 // Atajos de teclado durante la edición:
 // - Enter: guardar cambios
 // - Escape: cancelar y restaurar el texto anterior
@@ -761,6 +819,10 @@ function createTaskElement(taskOrText) {
 
   // Asociamos el id de la tarea al elemento DOM.
   li.dataset.id = task.id;
+
+  // Permite arrastrar para reordenar.
+  // Evitamos iniciar drag desde botones/inputs y mientras se edita (ver listeners abajo).
+  li.draggable = true;
 
   // Botón de borrar (lleva dentro una imagen como icono).
   const deleteBtn = document.createElement('button');
@@ -842,6 +904,75 @@ function createTaskElement(taskOrText) {
   }, 10);
 
   return li;
+}
+
+/**
+ * Devuelve true si este evento debería iniciar drag.
+ * Evita drag al interactuar con botones/inputs o mientras se edita.
+ * @param {Event} event
+ * @param {HTMLLIElement} li
+ * @returns {boolean}
+ */
+function canStartDragFromEvent(event, li) {
+  if (!li || li.dataset.editing === 'true') return false;
+  const target = event.target;
+  if (!(target instanceof Element)) return false;
+  if (target.closest('button')) return false;
+  if (target.closest('input, textarea, select')) return false;
+  return true;
+}
+
+/**
+ * Reordena el array `tasks` (solo proyecto activo) según el orden del DOM.
+ * @returns {void}
+ */
+function persistPendingOrderFromDom() {
+  if (!activeProjectId || !taskList) return;
+
+  const idsInDomOrder = Array.from(taskList.querySelectorAll('li[data-id]'))
+    .map(li => li.dataset.id)
+    .filter(Boolean);
+
+  if (idsInDomOrder.length === 0) return;
+
+  const rank = new Map(idsInDomOrder.map((id, idx) => [id, idx]));
+
+  const inProject = [];
+  const outsideProject = [];
+  tasks.forEach((t) => {
+    if (t.projectId === activeProjectId) inProject.push(t);
+    else outsideProject.push(t);
+  });
+
+  inProject.sort((a, b) => {
+    const ra = rank.has(a.id) ? rank.get(a.id) : Number.POSITIVE_INFINITY;
+    const rb = rank.has(b.id) ? rank.get(b.id) : Number.POSITIVE_INFINITY;
+    return ra - rb;
+  });
+
+  tasks = outsideProject.concat(inProject);
+  saveState();
+}
+
+/**
+ * Dado el puntero y el contenedor, obtiene el <li> "más cercano" para insertar antes.
+ * @param {HTMLElement} container
+ * @param {number} clientY
+ * @returns {HTMLLIElement|null}
+ */
+function getDragAfterElement(container, clientY) {
+  const draggableElements = Array.from(container.querySelectorAll('li.task-item:not(.is-dragging)'));
+  let closest = { offset: Number.NEGATIVE_INFINITY, element: null };
+
+  draggableElements.forEach((child) => {
+    const box = child.getBoundingClientRect();
+    const offset = clientY - (box.top + box.height / 2);
+    if (offset < 0 && offset > closest.offset) {
+      closest = { offset, element: child };
+    }
+  });
+
+  return /** @type {HTMLLIElement|null} */ (closest.element);
 }
 
 // ===== Crear el elemento <li> de una tarea completada (solo UI) =====

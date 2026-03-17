@@ -377,6 +377,15 @@
 }
 .dark .task-item { background: rgb(51 65 85); }
 
+/* Drag & drop reorder */
+.task-item[draggable="true"] {
+  cursor: grab;
+}
+.task-item.is-dragging {
+  opacity: 0.55;
+  cursor: grabbing;
+}
+
 .icon-btn {
   width: 26px;
   height: 26px;
