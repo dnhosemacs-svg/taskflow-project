@@ -84,7 +84,7 @@ function ensureNoResultsElement() {
   el.textContent = 'No hay ninguna tarea con ese nombre';
   el.setAttribute('role', 'status');
   el.setAttribute('aria-live', 'polite');
-  el.className = 'mt-3 text-sm text-slate-600 dark:text-slate-300';
+  el.className = 'no-results';
   el.style.display = 'none';
 
   searchInput.insertAdjacentElement('afterend', el);
@@ -133,6 +133,16 @@ function setPopupOpen(isOpening) {
   } else {
     root.classList.remove('has-popup');
   }
+}
+
+/**
+ * Sincroniza los labels de nombre de proyecto activo (móvil y escritorio).
+ * @param {string} name
+ * @returns {void}
+ */
+function updateActiveProjectNameLabels(name) {
+  if (activeProjectNameEl) activeProjectNameEl.textContent = name;
+  if (activeProjectNameDesktopEl) activeProjectNameDesktopEl.textContent = name;
 }
 
 /**
@@ -220,8 +230,7 @@ function setActiveProjectId(id) {
   activeProjectId = id;
   const p = getActiveProject();
   const name = p?.name ?? '—';
-  if (activeProjectNameEl) activeProjectNameEl.textContent = name;
-  if (activeProjectNameDesktopEl) activeProjectNameDesktopEl.textContent = name;
+  updateActiveProjectNameLabels(name);
 
   renderProjects();
   renderTasksForActiveProject();
@@ -513,12 +522,12 @@ function ensureCompletedList() {
   // Creamos el título y la lista "on the fly" para no depender de editar el HTML.
   const heading = document.createElement('h2');
   heading.id = 'completed-heading';
-  heading.className = 'text-2xl font-serif text-primario dark:text-blue-300 mt-8 mb-3';
+  heading.className = 'section-title section-title--top-gap';
   heading.textContent = 'Tareas completadas';
 
   const ul = document.createElement('ul');
   ul.id = 'completed';
-  ul.className = 'space-y-3 p-3 rounded-lg bg-white dark:bg-slate-800 text-[#111827] dark:text-[#F9FAFB]';
+  ul.className = 'task-list';
 
   taskList.insertAdjacentElement('afterend', ul);
   ul.insertAdjacentElement('beforebegin', heading);
@@ -1218,9 +1227,7 @@ function renderProjects() {
               saveState();
               renderProjects();
               const active = getActiveProject();
-              const activeName = active?.name ?? '—';
-              if (activeProjectNameEl) activeProjectNameEl.textContent = activeName;
-              if (activeProjectNameDesktopEl) activeProjectNameDesktopEl.textContent = activeName;
+              updateActiveProjectNameLabels(active?.name ?? '—');
               if (wasDrawerOpen) {
                 openProjectDrawer();
               }
@@ -1254,9 +1261,7 @@ function renderProjects() {
             saveState();
             renderProjects();
             const active = getActiveProject();
-            const activeName = active?.name ?? '—';
-            if (activeProjectNameEl) activeProjectNameEl.textContent = activeName;
-            if (activeProjectNameDesktopEl) activeProjectNameDesktopEl.textContent = activeName;
+            updateActiveProjectNameLabels(active?.name ?? '—');
           };
 
           const cancel = () => {
