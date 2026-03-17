@@ -74,12 +74,9 @@ let noResultsEl = document.getElementById('no-results');
 /** @type {string|null} */
 let draggedTaskId = null;
 
-// ===== Touch / Pointer reorder (mobile-friendly) =====
-/** @type {{ id: string, li: HTMLLIElement, pointerId: number, placeholder: HTMLLIElement, offsetY: number } | null} */
-let touchDragState = null;
-
-/** @type {number|null} */
-let touchDragLongPressTimer = null;
+// ===== Config reordenación (táctil) =====
+const REORDER_LONG_PRESS_MS = 180;
+const REORDER_CANCEL_SCROLL_THRESHOLD_PX = 10;
 
 /**
  * Asegura que existe el elemento de UI `#no-results` justo debajo del buscador.
@@ -87,79 +84,73 @@ let touchDragLongPressTimer = null;
  * @returns {HTMLElement|null}
  */
 
-// ===== Touch Events fallback (Safari/iOS antiguos o entornos sin Pointer Events fiables) =====
-/** @type {{ id: string, li: HTMLLIElement, touchId: number, placeholder: HTMLLIElement, offsetY: number } | null} */
-let legacyTouchDragState = null;
-
-/** @type {number|null} */
-let legacyTouchLongPressTimer = null;
-
-/** @type {{ x: number, y: number } | null} */
-let legacyTouchStartPoint = null;
-
 // ===== Scroll lock durante reorder (evita que se mueva la página) =====
-let reorderScrollLocked = false;
-let reorderScrollY = 0;
+const reorderScrollLock = (() => {
+  let locked = false;
+  let scrollY = 0;
 
-/**
- * iOS Safari: aunque fijes el body, puede seguir habiendo “scroll/bounce”.
- * Este handler global corta el scroll mientras se reordena.
- * @param {Event} e
- * @returns {void}
- */
-function preventGlobalScrollWhileReordering(e) {
-  if (!reorderScrollLocked) return;
-  // Solo prevenimos eventos que realmente desplazan.
-  if (e && typeof e.preventDefault === 'function') e.preventDefault();
-}
-
-/**
- * Bloquea/desbloquea el scroll del documento (robusto en iOS).
- * @param {boolean} locked
- * @returns {void}
- */
-function setReorderScrollLock(locked) {
-  if (locked === reorderScrollLocked) return;
-  reorderScrollLocked = locked;
-
-  const root = document.documentElement;
-  const body = document.body;
-  if (!root || !body) return;
-
-  if (locked) {
-    reorderScrollY = window.scrollY || window.pageYOffset || 0;
-    root.classList.add('is-reordering');
-
-    // iOS/Safari: fijar body para congelar scroll.
-    body.style.position = 'fixed';
-    body.style.top = `-${reorderScrollY}px`;
-    body.style.left = '0';
-    body.style.right = '0';
-    body.style.width = '100%';
-    body.style.overflow = 'hidden';
-    root.style.overflow = 'hidden';
-
-    // Corta scroll/bounce residual (iOS) mientras dure el drag.
-    document.addEventListener('touchmove', preventGlobalScrollWhileReordering, { passive: false });
-    document.addEventListener('wheel', preventGlobalScrollWhileReordering, { passive: false });
-  } else {
-    root.classList.remove('is-reordering');
-
-    body.style.position = '';
-    body.style.top = '';
-    body.style.left = '';
-    body.style.right = '';
-    body.style.width = '';
-    body.style.overflow = '';
-    root.style.overflow = '';
-
-    document.removeEventListener('touchmove', preventGlobalScrollWhileReordering);
-    document.removeEventListener('wheel', preventGlobalScrollWhileReordering);
-
-    if (reorderScrollY) window.scrollTo(0, reorderScrollY);
-    reorderScrollY = 0;
+  /**
+   * iOS Safari: aunque fijes el body, puede seguir habiendo “scroll/bounce”.
+   * Este handler global corta el scroll mientras se reordena.
+   * @param {Event} e
+   * @returns {void}
+   */
+  function preventGlobalScroll(e) {
+    if (!locked) return;
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
   }
-}
+
+  /**
+   * @param {boolean} next
+   * @returns {void}
+   */
+  function setLocked(next) {
+    if (next === locked) return;
+    locked = next;
+
+    const root = document.documentElement;
+    const body = document.body;
+    if (!root || !body) return;
+
+    if (locked) {
+      scrollY = window.scrollY || window.pageYOffset || 0;
+      root.classList.add('is-reordering');
+
+      body.style.position = 'fixed';
+      body.style.top = `-${scrollY}px`;
+      body.style.left = '0';
+      body.style.right = '0';
+      body.style.width = '100%';
+      body.style.overflow = 'hidden';
+      root.style.overflow = 'hidden';
+
+      document.addEventListener('touchmove', preventGlobalScroll, { passive: false });
+      document.addEventListener('wheel', preventGlobalScroll, { passive: false });
+    } else {
+      root.classList.remove('is-reordering');
+
+      body.style.position = '';
+      body.style.top = '';
+      body.style.left = '';
+      body.style.right = '';
+      body.style.width = '';
+      body.style.overflow = '';
+      root.style.overflow = '';
+
+      document.removeEventListener('touchmove', preventGlobalScroll);
+      document.removeEventListener('wheel', preventGlobalScroll);
+
+      if (scrollY) window.scrollTo(0, scrollY);
+      scrollY = 0;
+    }
+  }
+
+  return {
+    /** @returns {boolean} */
+    isLocked() { return locked; },
+    setLocked
+  };
+})();
 
 /**
  * Activa el modo "drag flotante": el <li> sigue el dedo y dejamos un placeholder.
@@ -179,12 +170,10 @@ function enableFloatingDrag(li, clientY) {
 
   // Convertir el elemento a "flotante"
   li.classList.add('is-dragging', 'is-touch-dragging', 'task-floating');
-  li.style.position = 'fixed';
-  li.style.left = `${rect.left}px`;
-  li.style.top = `${rect.top}px`;
-  li.style.width = `${rect.width}px`;
-  li.style.zIndex = '9999';
   li.style.pointerEvents = 'none';
+  li.style.setProperty('--task-floating-left', `${rect.left}px`);
+  li.style.setProperty('--task-floating-top', `${rect.top}px`);
+  li.style.setProperty('--task-floating-width', `${rect.width}px`);
 
   return { placeholder, offsetY };
 }
@@ -196,15 +185,291 @@ function enableFloatingDrag(li, clientY) {
  */
 function disableFloatingDrag(li, placeholder) {
   li.classList.remove('is-dragging', 'is-touch-dragging', 'task-floating');
-  li.style.position = '';
-  li.style.left = '';
-  li.style.top = '';
-  li.style.width = '';
-  li.style.zIndex = '';
   li.style.pointerEvents = '';
+  li.style.removeProperty('--task-floating-left');
+  li.style.removeProperty('--task-floating-top');
+  li.style.removeProperty('--task-floating-width');
 
   // Colocar el elemento donde estaba el placeholder.
   placeholder.replaceWith(li);
+}
+
+/**
+ * @param {{ li: HTMLLIElement, placeholder: HTMLLIElement, offsetY: number }} session
+ * @param {number} clientX
+ * @param {number} clientY
+ * @returns {void}
+ */
+function moveFloatingDrag(session, clientX, clientY) {
+  const top = clientY - session.offsetY;
+  session.li.style.setProperty('--task-floating-top', `${top}px`);
+
+  const elUnder = document.elementFromPoint(clientX, clientY);
+  const targetLi = elUnder instanceof Element ? elUnder.closest('li.task-item') : null;
+  if (!(targetLi instanceof HTMLLIElement)) return;
+  if (targetLi === session.li) return;
+  if (targetLi.classList.contains('task-placeholder')) return;
+
+  const box = targetLi.getBoundingClientRect();
+  const before = clientY < (box.top + box.height / 2);
+  if (before) taskList.insertBefore(session.placeholder, targetLi);
+  else taskList.insertBefore(session.placeholder, targetLi.nextSibling);
+}
+
+/**
+ * @param {{ li: HTMLLIElement, placeholder: HTMLLIElement }} session
+ * @param {{ persist: boolean }} options
+ * @returns {void}
+ */
+function finishFloatingDrag(session, options) {
+  disableFloatingDrag(session.li, session.placeholder);
+  if (options.persist) persistPendingOrderFromDom();
+}
+
+/**
+ * Controlador de reordenación táctil:
+ * - Pointer Events (touch/pen)
+ * - Touch Events fallback (Safari iOS antiguos / entornos raros)
+ * Mantiene el mismo comportamiento: long-press, elemento flotante, placeholder, persistencia, scroll lock.
+ * @param {HTMLUListElement} listEl
+ * @returns {{ destroy: () => void }}
+ */
+function setupTouchReorder(listEl) {
+  /** @type {{ id: string, li: HTMLLIElement, pointerId: number, placeholder: HTMLLIElement, offsetY: number } | null} */
+  let pointerSession = null;
+  /** @type {number|null} */
+  let pointerLongPressTimer = null;
+
+  /** @type {{ id: string, li: HTMLLIElement, touchId: number, placeholder: HTMLLIElement, offsetY: number } | null} */
+  let touchSession = null;
+  /** @type {number|null} */
+  let touchLongPressTimer = null;
+  /** @type {{ x: number, y: number } | null} */
+  let touchStartPoint = null;
+
+  const clearPointerTimer = () => {
+    if (pointerLongPressTimer === null) return;
+    clearTimeout(pointerLongPressTimer);
+    pointerLongPressTimer = null;
+  };
+
+  const clearTouchTimer = () => {
+    if (touchLongPressTimer === null) return;
+    clearTimeout(touchLongPressTimer);
+    touchLongPressTimer = null;
+  };
+
+  // --- Pointer Events ---
+  const onPointerDown = (event) => {
+    if (!event || typeof event !== 'object') return;
+    if (!('pointerType' in event)) return;
+    /** @type {PointerEvent} */
+    const pe = /** @type {any} */ (event);
+    if (!isTouchLikePointer(pe)) return;
+
+    const li = getTaskLiFromPointerEvent(pe);
+    if (!li) return;
+    if (!canStartDragFromEvent(pe, li)) return;
+    const taskId = li.dataset.id;
+    if (!taskId) return;
+
+    clearPointerTimer();
+    pointerLongPressTimer = window.setTimeout(() => {
+      pointerLongPressTimer = null;
+      const { placeholder, offsetY } = enableFloatingDrag(li, pe.clientY);
+      pointerSession = { id: taskId, li, pointerId: pe.pointerId, placeholder, offsetY };
+      reorderScrollLock.setLocked(true);
+      try { li.setPointerCapture(pe.pointerId); } catch { /* no-op */ }
+    }, REORDER_LONG_PRESS_MS);
+  };
+
+  const onPointerMove = (event) => {
+    if (!event || typeof event !== 'object') return;
+    if (!('pointerType' in event)) return;
+    /** @type {PointerEvent} */
+    const pe = /** @type {any} */ (event);
+    if (!isTouchLikePointer(pe)) return;
+    if (!pointerSession) return;
+    if (pointerSession.pointerId !== pe.pointerId) return;
+
+    pe.preventDefault();
+    if (!listEl.contains(pointerSession.li)) return;
+    moveFloatingDrag(pointerSession, pe.clientX, pe.clientY);
+  };
+
+  const onPointerUp = (event) => {
+    if (!event || typeof event !== 'object') return;
+    if (!('pointerType' in event)) return;
+    /** @type {PointerEvent} */
+    const pe = /** @type {any} */ (event);
+    if (!isTouchLikePointer(pe)) return;
+
+    clearPointerTimer();
+    if (!pointerSession) return;
+    if (pointerSession.pointerId !== pe.pointerId) return;
+
+    pe.preventDefault();
+    finishFloatingDrag(pointerSession, { persist: true });
+    try { pointerSession.li.releasePointerCapture(pe.pointerId); } catch { /* no-op */ }
+    pointerSession = null;
+    reorderScrollLock.setLocked(false);
+  };
+
+  const onPointerCancel = (event) => {
+    if (!event || typeof event !== 'object') return;
+    if (!('pointerType' in event)) return;
+    /** @type {PointerEvent} */
+    const pe = /** @type {any} */ (event);
+    if (!isTouchLikePointer(pe)) return;
+
+    clearPointerTimer();
+    if (!pointerSession) return;
+    if (pointerSession.pointerId !== pe.pointerId) return;
+
+    finishFloatingDrag(pointerSession, { persist: false });
+    pointerSession = null;
+    reorderScrollLock.setLocked(false);
+  };
+
+  listEl.addEventListener('pointerdown', onPointerDown);
+  listEl.addEventListener('pointermove', onPointerMove);
+  listEl.addEventListener('pointerup', onPointerUp);
+  listEl.addEventListener('pointercancel', onPointerCancel);
+
+  // --- Touch Events fallback ---
+  const onTouchMoveWindow = (event) => {
+    // Si Pointer Events está manejando, no intervenir.
+    if (pointerSession) return;
+    if (!touchSession) return;
+    if (!event.touches || event.touches.length !== 1) return;
+    const touch = event.touches[0];
+    if (touch.identifier !== touchSession.touchId) return;
+    event.preventDefault();
+    if (!listEl.contains(touchSession.li)) return;
+    moveFloatingDrag(touchSession, touch.clientX, touch.clientY);
+  };
+
+  const endTouchDrag = (persist) => {
+    clearTouchTimer();
+    touchStartPoint = null;
+    if (!touchSession) return;
+    finishFloatingDrag(touchSession, { persist });
+    touchSession = null;
+    window.removeEventListener('touchmove', onTouchMoveWindow, { capture: true });
+    reorderScrollLock.setLocked(false);
+  };
+
+  const onTouchStart = (event) => {
+    // Si Pointer Events ya activó drag, ignorar.
+    if (pointerSession) return;
+    if (!event.touches || event.touches.length !== 1) return;
+
+    const touch = event.touches[0];
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const li = target.closest('li.task-item');
+    if (!(li instanceof HTMLLIElement)) return;
+    if (!canStartDragFromEvent(event, li)) return;
+    const taskId = li.dataset.id;
+    if (!taskId) return;
+
+    touchStartPoint = { x: touch.clientX, y: touch.clientY };
+    clearTouchTimer();
+
+    touchLongPressTimer = window.setTimeout(() => {
+      touchLongPressTimer = null;
+      const { placeholder, offsetY } = enableFloatingDrag(li, touch.clientY);
+      touchSession = { id: taskId, li, touchId: touch.identifier, placeholder, offsetY };
+      reorderScrollLock.setLocked(true);
+    }, REORDER_LONG_PRESS_MS);
+  };
+
+  const TOUCHSTART_OPTIONS = /** @type {AddEventListenerOptions} */ ({ passive: true });
+  listEl.addEventListener('touchstart', onTouchStart, TOUCHSTART_OPTIONS);
+
+  const onTouchMove = (event) => {
+    if (pointerSession) return;
+    if (!event.touches || event.touches.length !== 1) return;
+    const touch = event.touches[0];
+
+    // Si aún no activamos drag y el usuario se mueve "mucho", asumimos scroll y cancelamos long-press.
+    if (!touchSession && touchLongPressTimer !== null && touchStartPoint) {
+      const dx = Math.abs(touch.clientX - touchStartPoint.x);
+      const dy = Math.abs(touch.clientY - touchStartPoint.y);
+      if (dx + dy > REORDER_CANCEL_SCROLL_THRESHOLD_PX) {
+        clearTouchTimer();
+        touchStartPoint = null;
+      }
+      return;
+    }
+
+    if (touchSession) {
+      // Asegurar que capturamos el movimiento aunque el dedo salga de la lista.
+      window.addEventListener('touchmove', onTouchMoveWindow, { passive: false, capture: true });
+      onTouchMoveWindow(event);
+    }
+  };
+
+  const TOUCHMOVE_OPTIONS = /** @type {AddEventListenerOptions} */ ({ passive: false });
+  listEl.addEventListener('touchmove', onTouchMove, TOUCHMOVE_OPTIONS);
+
+  const onTouchEnd = () => {
+    if (pointerSession) return;
+    // Si soltó antes de activar long-press, cancelar timer.
+    if (touchLongPressTimer !== null) {
+      clearTouchTimer();
+      touchStartPoint = null;
+      return;
+    }
+    if (!touchSession) return;
+    endTouchDrag(true);
+  };
+
+  const TOUCHEND_OPTIONS = /** @type {AddEventListenerOptions} */ ({ passive: true });
+  listEl.addEventListener('touchend', onTouchEnd, TOUCHEND_OPTIONS);
+
+  const onTouchCancel = () => {
+    if (pointerSession) return;
+    if (touchLongPressTimer !== null) {
+      clearTouchTimer();
+      touchStartPoint = null;
+      return;
+    }
+    if (!touchSession) return;
+    endTouchDrag(false);
+  };
+
+  const TOUCHCANCEL_OPTIONS = /** @type {AddEventListenerOptions} */ ({ passive: true });
+  listEl.addEventListener('touchcancel', onTouchCancel, TOUCHCANCEL_OPTIONS);
+
+  return {
+    destroy() {
+      clearPointerTimer();
+      clearTouchTimer();
+
+      if (pointerSession) {
+        try { finishFloatingDrag(pointerSession, { persist: false }); } catch { /* no-op */ }
+        pointerSession = null;
+      }
+      if (touchSession) {
+        try { finishFloatingDrag(touchSession, { persist: false }); } catch { /* no-op */ }
+        touchSession = null;
+      }
+
+      window.removeEventListener('touchmove', onTouchMoveWindow, { capture: true });
+      reorderScrollLock.setLocked(false);
+
+      listEl.removeEventListener('pointerdown', onPointerDown);
+      listEl.removeEventListener('pointermove', onPointerMove);
+      listEl.removeEventListener('pointerup', onPointerUp);
+      listEl.removeEventListener('pointercancel', onPointerCancel);
+
+      listEl.removeEventListener('touchstart', onTouchStart, TOUCHSTART_OPTIONS);
+      listEl.removeEventListener('touchmove', onTouchMove, TOUCHMOVE_OPTIONS);
+      listEl.removeEventListener('touchend', onTouchEnd, TOUCHEND_OPTIONS);
+      listEl.removeEventListener('touchcancel', onTouchCancel, TOUCHCANCEL_OPTIONS);
+    }
+  };
 }
 
 function ensureNoResultsElement() {
@@ -900,254 +1165,8 @@ taskList.addEventListener('dragend', () => {
   draggedTaskId = null;
 });
 
-// ===== Touch / Pointer reorder (para pantallas táctiles) =====
-// HTML5 DnD no es fiable en móvil (especialmente iOS), así que añadimos un fallback por Pointer Events:
-// - long-press (~180ms) o arrastre inmediato
-// - reordenamiento visual durante el movimiento
-// - persistencia al soltar
-taskList.addEventListener('pointerdown', (event) => {
-  if (!event || typeof event !== 'object') return;
-  if (!('pointerType' in event)) return;
-  /** @type {PointerEvent} */
-  const pe = /** @type {any} */ (event);
-  if (!isTouchLikePointer(pe)) return;
-
-  const li = getTaskLiFromPointerEvent(pe);
-  if (!li) return;
-  if (!canStartDragFromEvent(pe, li)) return;
-
-  // Evitar que el navegador inicie gestos (scroll/zoom) durante reorder.
-  // Aun así, no bloqueamos todo: solo cuando se activa el drag.
-  const taskId = li.dataset.id;
-  if (!taskId) return;
-
-  // Limpiar timer previo si lo hubiera.
-  if (touchDragLongPressTimer !== null) {
-    clearTimeout(touchDragLongPressTimer);
-    touchDragLongPressTimer = null;
-  }
-
-  // Long-press para no interferir con scroll.
-  touchDragLongPressTimer = window.setTimeout(() => {
-    touchDragLongPressTimer = null;
-    const { placeholder, offsetY } = enableFloatingDrag(li, pe.clientY);
-    touchDragState = { id: taskId, li, pointerId: pe.pointerId, placeholder, offsetY };
-    setReorderScrollLock(true);
-    try { li.setPointerCapture(pe.pointerId); } catch { /* no-op */ }
-  }, 180);
-});
-
-taskList.addEventListener('pointermove', (event) => {
-  if (!event || typeof event !== 'object') return;
-  if (!('pointerType' in event)) return;
-  /** @type {PointerEvent} */
-  const pe = /** @type {any} */ (event);
-  if (!isTouchLikePointer(pe)) return;
-
-  // Si aún no activamos drag, no hacemos nada (permite scroll normal).
-  if (!touchDragState) return;
-  if (touchDragState.pointerId !== pe.pointerId) return;
-
-  pe.preventDefault();
-
-  const draggingEl = touchDragState.li;
-  // Mover el elemento flotante con el dedo.
-  const top = pe.clientY - touchDragState.offsetY;
-  draggingEl.style.top = `${top}px`;
-
-  // Encontrar el <li> objetivo debajo del dedo.
-  const elUnder = document.elementFromPoint(pe.clientX, pe.clientY);
-  const targetLi = elUnder instanceof Element ? elUnder.closest('li.task-item') : null;
-  if (!(targetLi instanceof HTMLLIElement)) return;
-  if (targetLi === draggingEl) return;
-  if (targetLi.classList.contains('task-placeholder')) return;
-
-  // Insertar antes/después según posición del dedo respecto al target.
-  const box = targetLi.getBoundingClientRect();
-  const before = pe.clientY < (box.top + box.height / 2);
-  if (before) {
-    taskList.insertBefore(touchDragState.placeholder, targetLi);
-  } else {
-    taskList.insertBefore(touchDragState.placeholder, targetLi.nextSibling);
-  }
-});
-
-taskList.addEventListener('pointerup', (event) => {
-  if (!event || typeof event !== 'object') return;
-  if (!('pointerType' in event)) return;
-  /** @type {PointerEvent} */
-  const pe = /** @type {any} */ (event);
-  if (!isTouchLikePointer(pe)) return;
-
-  // Si soltó antes de long-press, cancelar.
-  if (touchDragLongPressTimer !== null) {
-    clearTimeout(touchDragLongPressTimer);
-    touchDragLongPressTimer = null;
-  }
-
-  if (!touchDragState) return;
-  if (touchDragState.pointerId !== pe.pointerId) return;
-
-  pe.preventDefault();
-  // Soltar: colocar el <li> donde está el placeholder y persistir.
-  disableFloatingDrag(touchDragState.li, touchDragState.placeholder);
-  persistPendingOrderFromDom();
-
-  try { touchDragState.li.releasePointerCapture(pe.pointerId); } catch { /* no-op */ }
-  touchDragState = null;
-  setReorderScrollLock(false);
-});
-
-taskList.addEventListener('pointercancel', (event) => {
-  if (!event || typeof event !== 'object') return;
-  if (!('pointerType' in event)) return;
-  /** @type {PointerEvent} */
-  const pe = /** @type {any} */ (event);
-  if (!isTouchLikePointer(pe)) return;
-
-  if (touchDragLongPressTimer !== null) {
-    clearTimeout(touchDragLongPressTimer);
-    touchDragLongPressTimer = null;
-  }
-  if (!touchDragState) return;
-  if (touchDragState.pointerId !== pe.pointerId) return;
-
-  // Cancel: restaurar posición original (placeholder).
-  disableFloatingDrag(touchDragState.li, touchDragState.placeholder);
-  touchDragState = null;
-  setReorderScrollLock(false);
-});
-
-// Touch Events fallback (solo si el navegador no usa Pointer Events bien).
-// Importante: usamos {passive:false} en move para permitir preventDefault (evitar scroll durante drag).
-taskList.addEventListener('touchstart', (event) => {
-  // Si Pointer Events ya activó drag, ignorar.
-  if (touchDragState) return;
-  if (!event.touches || event.touches.length !== 1) return;
-
-  const touch = event.touches[0];
-  const target = event.target;
-  if (!(target instanceof Element)) return;
-
-  const li = target.closest('li.task-item');
-  if (!(li instanceof HTMLLIElement)) return;
-  if (!canStartDragFromEvent(event, li)) return;
-  const taskId = li.dataset.id;
-  if (!taskId) return;
-
-  legacyTouchStartPoint = { x: touch.clientX, y: touch.clientY };
-
-  if (legacyTouchLongPressTimer !== null) {
-    clearTimeout(legacyTouchLongPressTimer);
-    legacyTouchLongPressTimer = null;
-  }
-
-  legacyTouchLongPressTimer = window.setTimeout(() => {
-    legacyTouchLongPressTimer = null;
-    const { placeholder, offsetY } = enableFloatingDrag(li, touch.clientY);
-    legacyTouchDragState = { id: taskId, li, touchId: touch.identifier, placeholder, offsetY };
-    setReorderScrollLock(true);
-  }, 180);
-}, { passive: true });
-
-const onLegacyTouchMoveWindow = (event) => {
-  if (touchDragState) return;
-  if (!legacyTouchDragState) return;
-  if (!event.touches || event.touches.length !== 1) return;
-
-  const touch = event.touches[0];
-  if (touch.identifier !== legacyTouchDragState.touchId) return;
-
-  // Clave: bloquear scroll mientras se reordena.
-  event.preventDefault();
-
-  const draggingEl = legacyTouchDragState.li;
-  // Mover el elemento flotante con el dedo.
-  const top = touch.clientY - legacyTouchDragState.offsetY;
-  draggingEl.style.top = `${top}px`;
-
-  const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
-  const targetLi = elUnder instanceof Element ? elUnder.closest('li.task-item') : null;
-  if (!(targetLi instanceof HTMLLIElement)) return;
-  if (targetLi === draggingEl) return;
-  if (targetLi.classList.contains('task-placeholder')) return;
-
-  const box = targetLi.getBoundingClientRect();
-  const before = touch.clientY < (box.top + box.height / 2);
-  if (before) taskList.insertBefore(legacyTouchDragState.placeholder, targetLi);
-  else taskList.insertBefore(legacyTouchDragState.placeholder, targetLi.nextSibling);
-};
-
-const endLegacyTouchDrag = () => {
-  if (legacyTouchLongPressTimer !== null) {
-    clearTimeout(legacyTouchLongPressTimer);
-    legacyTouchLongPressTimer = null;
-  }
-  legacyTouchStartPoint = null;
-
-  if (!legacyTouchDragState) return;
-  disableFloatingDrag(legacyTouchDragState.li, legacyTouchDragState.placeholder);
-  persistPendingOrderFromDom();
-  legacyTouchDragState = null;
-
-  window.removeEventListener('touchmove', onLegacyTouchMoveWindow, { capture: true });
-  setReorderScrollLock(false);
-};
-
-taskList.addEventListener('touchmove', (event) => {
-  // Si Pointer Events está manejando, no intervenir.
-  if (touchDragState) return;
-  if (!event.touches || event.touches.length !== 1) return;
-
-  const touch = event.touches[0];
-
-  // Si aún no activamos drag y el usuario se mueve "mucho", asumimos scroll y cancelamos long-press.
-  if (!legacyTouchDragState && legacyTouchLongPressTimer !== null && legacyTouchStartPoint) {
-    const dx = Math.abs(touch.clientX - legacyTouchStartPoint.x);
-    const dy = Math.abs(touch.clientY - legacyTouchStartPoint.y);
-    if (dx + dy > 10) {
-      clearTimeout(legacyTouchLongPressTimer);
-      legacyTouchLongPressTimer = null;
-      legacyTouchStartPoint = null;
-    }
-    return;
-  }
-
-  // Si ya está activo el drag, dejar que el listener global maneje el movimiento.
-  if (legacyTouchDragState) {
-    // Asegurar que capturamos el movimiento aunque el dedo salga de la lista.
-    window.addEventListener('touchmove', onLegacyTouchMoveWindow, { passive: false, capture: true });
-    onLegacyTouchMoveWindow(event);
-  }
-}, { passive: false });
-
-taskList.addEventListener('touchend', (event) => {
-  if (touchDragState) return;
-
-  // Si soltó antes de activar long-press, cancelar timer.
-  if (legacyTouchLongPressTimer !== null) {
-    clearTimeout(legacyTouchLongPressTimer);
-    legacyTouchLongPressTimer = null;
-  }
-  legacyTouchStartPoint = null;
-
-  if (!legacyTouchDragState) return;
-  endLegacyTouchDrag();
-}, { passive: true });
-
-taskList.addEventListener('touchcancel', () => {
-  if (touchDragState) return;
-  if (legacyTouchLongPressTimer !== null) {
-    clearTimeout(legacyTouchLongPressTimer);
-    legacyTouchLongPressTimer = null;
-  }
-  legacyTouchStartPoint = null;
-  if (!legacyTouchDragState) return;
-  disableFloatingDrag(legacyTouchDragState.li, legacyTouchDragState.placeholder);
-  legacyTouchDragState = null;
-  window.removeEventListener('touchmove', onLegacyTouchMoveWindow, { capture: true });
-  setReorderScrollLock(false);
-}, { passive: true });
+// Touch reorder (móvil/tablet): Pointer Events + Touch fallback (misma UX).
+const touchReorderController = setupTouchReorder(taskList);
 
 // Atajos de teclado durante la edición:
 // - Enter: guardar cambios

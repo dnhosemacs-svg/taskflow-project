@@ -394,6 +394,11 @@
 
 /* Elemento flotante durante drag (móvil) */
 .task-item.task-floating {
+  position: fixed;
+  left: var(--task-floating-left);
+  top: var(--task-floating-top);
+  width: var(--task-floating-width);
+  z-index: 9999;
   transition: none; /* que siga el dedo sin retraso */
   user-select: none;
   -webkit-user-select: none;
