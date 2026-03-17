@@ -51,3 +51,22 @@ Este archivo documenta, paso a paso, los cambios de refactorización que vamos r
 - **JSDoc en funciones clave**
   - Se añadieron anotaciones JSDoc en `src/app.js` y `src/theme.js` para mejorar autocompletado, documentación y seguridad durante refactors (tipos, params, returns y efectos secundarios).
 
+## 2026-03-17
+
+- **Drag & drop (desktop)**
+  - Reordenar tareas pendientes arrastrándolas dentro de la lista.
+  - Mover tareas a proyectos soltándolas sobre un proyecto.
+  - Soltar sobre `+ Proyecto` crea un proyecto nuevo automáticamente y mueve la tarea.
+
+- **Reordenación táctil (móvil/tablet)**
+  - Long‑press + arrastre con elemento flotante y placeholder.
+  - Bloqueo de scroll robusto (incluye prevención global de `touchmove` durante reorder).
+  - Refactor del subsistema táctil: `setupTouchReorder(...)` devuelve `destroy()`; constantes configurables para long‑press y threshold; scroll lock encapsulado en `reorderScrollLock`.
+
+- **Completar por clic**
+  - Clic simple en el texto de una tarea la marca como completada.
+  - Doble clic mantiene edición: cancela el completado pendiente y entra en modo edición.
+
+- **UI**
+  - El botón `.move-btn` se muestra solo en móvil (en desktop se favorece el drag & drop).
+

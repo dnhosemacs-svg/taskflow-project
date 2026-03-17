@@ -7,6 +7,10 @@
 - **Guarda (persistente)**: proyectos, tareas pendientes y el proyecto activo en `localStorage`.
 - **No guarda (solo sesión)**: las tareas completadas (desaparecen al recargar).
 - **Tema claro/oscuro**: se aplica con la clase `dark` en el `<html>` y se recuerda en `localStorage`.
+- **Drag & drop**:
+  - Reordenar tareas pendientes por arrastre (desktop).
+  - Reordenar en táctil con long‑press + elemento flotante (móvil/tablet).
+  - En desktop, mover tareas a otro proyecto soltándolas sobre un proyecto (o sobre `+ Proyecto` para crear uno nuevo y moverla).
 
 ---
 
@@ -64,6 +68,9 @@ Aquí está casi todo: datos, persistencia, render y eventos.
 #### d) Acciones del usuario (eventos)
 - **Agregar tarea** (`addTask()`): crea tarea → la añade a `tasks` → la pinta → guarda.
 - **Editar tarea** (`startEdit/finishEdit/cancelEdit`): cambia `span` ↔ `input` y al guardar actualiza `tasks` + guarda.
+- **Completar tarea (clic en texto)**:
+  - un clic simple sobre el `<span>` agenda el completado (con un delay pequeño para no romper el doble clic)
+  - el doble clic cancela el completado pendiente y entra en edición
 - **“Eliminar” tarea** (click en `.delete-btn`):
   - quita de `tasks` (sí se guarda)
   - mete en `completedTasks` (no se guarda)
@@ -74,6 +81,9 @@ Aquí está casi todo: datos, persistencia, render y eventos.
   - abre modal para elegir proyecto destino
   - cambia `task.projectId` y guarda
   - quita el `<li>` de la vista actual (ya no pertenece al proyecto activo)
+- **Mover tarea por drag & drop (desktop)**:
+  - arrastrar una tarea y soltarla sobre un proyecto en la lista de proyectos actualiza `task.projectId`
+  - soltar sobre `+ Proyecto` crea un proyecto automáticamente y mueve la tarea a ese proyecto
 - **Buscar** (`filterTasks()`): no cambia datos; solo muestra/oculta `<li>` según texto.
 
 ### `styles/components.css` (componentes visuales)
@@ -82,6 +92,10 @@ Centraliza estilos reutilizables y estados:
 - Modo oscuro depende de `html.dark ...`
 - Popups/drawers usan `.popup-root`, `.popup-backdrop`, `.popup-panel`
 - Existe un modo “hay popup abierto” con `html.has-popup` que oscurece el fondo y (en móvil) oculta el botón de tema.
+- Drag & drop:
+  - `.task-item[draggable="true"]`, `.task-item.is-dragging` para desktop
+  - `.task-floating` + `.task-placeholder` + `html.is-reordering` para arrastre táctil y bloqueo de scroll
+  - `.move-btn` se muestra solo en móvil (en desktop se usa drag & drop para mover tareas a proyectos)
 
 ---
 
@@ -183,6 +197,17 @@ Piensa NextUp como 4 bloques:
 - **persistencia**: guardar → `saveState()`
 - **render**: cambia el `<li>` (span/input) + `filterTasks()` para mantener coherencia
 
+#### D.1) Completar tarea (clic en texto)
+- **evento**: clic simple sobre el texto de la tarea
+- **datos**:
+  - quita de `tasks` (persistente)
+  - añade a `completedTasks` (solo sesión)
+- **persistencia**: `saveState()`
+- **render**:
+  - anima y quita el `<li>` de pendientes
+  - crea `<li>` en completadas
+  - `updateCompletedVisibility()` + `updatePendingVisibility()` + `updateSearchVisibility()` + `filterTasks()`
+
 #### E) “Eliminar” tarea (pasar a completadas)
 - **evento**: click en `.delete-btn`
 - **datos**:
@@ -214,6 +239,13 @@ Piensa NextUp como 4 bloques:
 - **render**:
   - quita el `<li>` de la lista actual (ya no corresponde)
   - `updateSearchVisibility()` + `updatePendingVisibility()` + `filterTasks()`
+
+#### H) Reordenar pendientes / mover por drag (desktop)
+- **evento**: drag & drop nativo HTML5
+- **datos**:
+  - reordenar: se persiste el orden del proyecto activo leyendo el orden del DOM
+  - mover a proyecto: se actualiza `task.projectId` al soltar sobre un proyecto o sobre `+ Proyecto`
+- **persistencia**: `saveState()`
 
 ### 7.3 Regla mental rápida
 Si cambia **proyectos/tareas/activo** → **guardar** → **actualizar UI** (repintar o modificar puntual) → **ajustar filtro + visibilidad**.

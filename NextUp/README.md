@@ -15,7 +15,7 @@ Permite crear tareas organizadas por proyectos, buscarlas, marcarlas como comple
   - Crear nuevos proyectos.  
   - Renombrar proyectos mediante un modal centrado.  
   - Eliminar proyectos (se eliminan también sus tareas asociadas).  
-  - Mover tareas entre proyectos mediante un modal de selección.
+  - Mover tareas entre proyectos mediante drag & drop (escritorio) o modal de selección (móvil).
 
 - **Añadir y editar tareas**:  
   - Campo de texto para añadir nuevas tareas al proyecto activo.  
@@ -24,9 +24,18 @@ Permite crear tareas organizadas por proyectos, buscarlas, marcarlas como comple
     - `Escape` cancela y restaura el texto original.
 
 - **Completar tareas (soft delete)**:  
-  - El botón de eliminar mueve la tarea a una sección de **“Tareas completadas”** en la parte inferior.  
+  - Un **clic simple sobre el texto** de una tarea la marca como completada.  
+  - El botón de eliminar también mueve la tarea a completadas (misma lógica).  
   - Las tareas completadas se muestran tachadas y con un botón de “volver a pendientes”.  
   - Esta sección solo existe durante la sesión actual (no se persiste en `localStorage`), pero las pendientes sí se actualizan.
+
+- **Reordenar tareas (arrastrar y soltar)**:
+  - En **escritorio** puedes reordenar las tareas pendientes arrastrándolas dentro de la lista.
+  - En **móvil/tablet** se usa long‑press (mantener pulsado) y arrastre con elemento flotante + placeholder (compatible con iOS/Android).
+
+- **Mover tareas a proyectos por drag & drop (escritorio)**:
+  - Arrastra una tarea y suéltala sobre un proyecto en la lista de proyectos para moverla.
+  - Si la sueltas sobre **`+ Proyecto`**, se crea automáticamente un proyecto nuevo (“Nuevo proyecto”, “Nuevo proyecto 2”, …) y se mueve ahí.
 
 - **Búsqueda en tiempo real**:  
   - Barra de búsqueda que filtra tanto tareas pendientes como completadas del proyecto activo.  
@@ -52,6 +61,7 @@ Permite crear tareas organizadas por proyectos, buscarlas, marcarlas como comple
   - Gestión de proyectos y movimiento de tareas entre proyectos.  
   - Persistencia en `localStorage` con un estado versionado.  
   - Búsqueda en tiempo real y manejo de la sección de completadas.  
+  - Drag & drop: reordenar tareas, mover tareas a proyectos en escritorio y arrastre táctil en móvil/tablet.
   - Gestión del tema (modo claro/oscuro) desde `src/theme.js`.
 
 ---
@@ -87,8 +97,14 @@ Esta página puede venir bien para un sin fin de cosas, administrar el hopgar co
 
 ### Ejemplo 2: organizar tareas por proyectos
 
--Al tener varios proyectos es posible que o bien estos compartan una tarea o bien nos equivoquemos al añadir una tarea al proyecto equivocado y para estos caso hay implementado un boton mediante el cual seleccionamos cualquier proyecto de los que tengamos ya creados y moverla con un click.
+-Al tener varios proyectos es posible que o bien estos compartan una tarea o bien nos equivoquemos al añadir una tarea al proyecto equivocado.
+ - En móvil: hay un botón para moverla mediante un modal.
+ - En escritorio: puedes arrastrar la tarea y soltarla sobre el proyecto destino (o sobre `+ Proyecto` para crear uno nuevo).
 
 ### Ejemplo 3: usar la búsqueda y las tareas completadas
 
 -Tenemos la posibilidad de buscar tareas por texto, en el caso de tener una lista mas extensa de tareas puede ser un problema encontrar la tarea concreta, además se ha tenido en cuenta que se puede completar una tarea por error y po rello el buscador encuentra tanto las tareas por completar como las completadas para poder revertir el error.
+
+### Ejemplo 4: completar rápido (sin botones)
+
+-Con un clic simple sobre el texto de una tarea pendiente, la tarea pasa a completadas (y podrás restaurarla).
