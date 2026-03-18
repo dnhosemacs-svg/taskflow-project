@@ -160,9 +160,7 @@
   }
 }
 @media (min-width: 768px) {
-  .app-layout {
-    /* Layout (flex-direction/alineación) lo maneja Bootstrap utilities en el HTML */
-  }
+  /* Layout de columnas se maneja con Bootstrap en el HTML */
 }
 
 .projects-shell {
@@ -361,10 +359,8 @@
   margin-top: 20vh;
 }
 
-/* Confirmación (eliminar proyecto): centrado real */
-#confirm-modal-panel {
-  margin-top: 0;
-}
+
+
 
 /* Clases usadas por elementos generados desde app.js */
 .task-item {
@@ -436,12 +432,7 @@ html.is-reordering body {
 .dark .icon-btn { color: var(--color-blue-300); }
 .icon-btn:focus { outline: 2px solid var(--color-primario); outline-offset: 2px; }
 
-.project-add-icon {
-  color: var(--color-primario);
-}
-.dark .project-add-icon {
-  color: var(--color-blue-300);
-}
+
 
 /* Botón editar tarea: solo visible en móviles (similar al theme-toggle) */
 .edit-btn {

@@ -6,37 +6,35 @@
 }
 
 #theme-toggle-icon {
+  display: none; /* por defecto oculto, se controla por media queries */
   width: 20px;
   height: 20px;
-  display: none; /* por defecto oculto, se controla por media queries */
-  /*
-    Icono tintable (mask):
-    - En vez de <img>, usamos un <span> con mask-image.
-    - El color lo pone background-color, así se adapta a la paleta.
-    - data-icon elige qué SVG usar como máscara.
-  */
-  background-color: var(--icon-color, currentColor);
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-  -webkit-mask-size: contain;
-  mask-size: contain;
+  align-items: center;
+  justify-content: center;
 }
 
-/* Colores requeridos por icono (según lo pedido) */
+/* Iconos inline: mostrar según data-icon */
+#theme-toggle-icon svg {
+  width: 20px;
+  
+  height: 20px;
+  display: none;
+}
+
 /* Luna (cuando NO está en dark): mismo color que el fondo en dark mode */
 #theme-toggle-icon[data-icon="moon"] {
-  --icon-color: var(--color-slate-900);
-  -webkit-mask-image: url("../Imagenes/moon-fill.svg");
-  mask-image: url("../Imagenes/moon-fill.svg");
+  color: rgb(15 23 42); /* slate-900 */
+}
+#theme-toggle-icon[data-icon="moon"] svg:first-child {
+  display: block;
 }
 
 /* Sol (cuando SÍ está en dark): mismo color que el h1 (dark:text-blue-300) */
 #theme-toggle-icon[data-icon="sun"] {
-  --icon-color: var(--color-blue-300);
-  -webkit-mask-image: url("../Imagenes/sun-fill.svg");
-  mask-image: url("../Imagenes/sun-fill.svg");
+  color: rgb(147 197 253); /* blue-300 */
+}
+#theme-toggle-icon[data-icon="sun"] svg:last-child {
+  display: block;
 }
 
 /* En pantallas pequeñas (smartphones) se muestra solo el icono */
@@ -59,7 +57,7 @@
   }
 
   #theme-toggle-icon {
-    display: inline-block;
+    display: inline-flex;
   }
 }
 
