@@ -172,6 +172,13 @@
   /* Layout de columnas se maneja con Bootstrap en el HTML */
 }
 
+/* Separación extra entre Proyectos y Tareas en escritorio */
+@media (min-width: 992px) {
+  .tasks-col {
+    margin-left: 11.25rem;
+  }
+}
+
 .projects-shell {
   flex-shrink: 0;
   border-radius: 0.75rem;
