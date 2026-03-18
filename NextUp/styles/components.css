@@ -132,6 +132,9 @@
 @media (min-width: 640px) {
   .card-app { padding: 2.5rem; }
 }
+@media (max-width: 640px) {
+  .card-app { padding: 0.75rem; }
+}
 @media (min-width: 768px) {
   .card-app {
     padding-top: 1.25rem;
