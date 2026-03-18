@@ -196,8 +196,7 @@
 @media (min-width: 768px) {
   .sidebar-desktop {
     display: block;
-    width: 16rem;
-    flex-shrink: 0;
+    width: 100%;
   }
 }
 
@@ -431,6 +430,13 @@ html.is-reordering body {
 }
 .dark .icon-btn { color: var(--color-blue-300); }
 .icon-btn:focus { outline: 2px solid var(--color-primario); outline-offset: 2px; }
+
+.project-add-icon {
+  color: var(--color-primario);
+}
+.dark .project-add-icon {
+  color: var(--color-blue-300);
+}
 
 /* Botón editar tarea: solo visible en móviles (similar al theme-toggle) */
 .edit-btn {

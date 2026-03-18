@@ -54,16 +54,19 @@
     <!-- Contenedor principal: proyectos + tareas (responsive, ancho contenido como antes) -->
     <main id="main" class="card-app">
 
-    <!-- Layout principal: sidebar izquierda (desktop) + contenedor de tareas -->
-    <div class="app-layout d-flex flex-column flex-md-row align-items-start justify-content-center">
+    <!-- Layout principal (Bootstrap grid): proyectos (3) + tareas (6) centrada -->
+    <div class="app-layout row g-4">
 
         <!-- Contenedor de proyectos (sidebar) -->
-        <section class="projects-shell">
+        <section class="projects-shell col-lg-3 d-none d-lg-block">
             <aside class="sidebar-desktop">
                 <div class="flex items-center justify-between gap-3 mb-3">
                     <h2 class="section-title">Proyectos</h2>
-                    <button id="project-add" type="button" class="btn btn-ghost ml-1">
-                        + Proyecto
+                    <button id="project-add" type="button" class="btn btn-ghost ml-1" aria-label="Añadir proyecto" title="Añadir proyecto">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="project-add-icon w-[18px] h-[18px]" aria-hidden="true">
+                            <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm1 5v4h4v2h-4v4h-2v-4H7v-2h4V7h2z"/>
+                        </svg>
+                        <span class="sr-only">Añadir proyecto</span>
                     </button>
                 </div>
                 <ul id="project-list" class="list-panel"></ul>
@@ -71,7 +74,8 @@
         </section>
 
         <!-- Contenedor principal: buscar, añadir y listar tareas -->
-        <section class="card-app">
+        <section class="col-12 col-lg-6">
+            <div class="card-app">
             <div class="tasks-shell">
                 <!-- Barra superior (móvil): dropdown para cambiar proyecto + botón para gestionar (crear, renombrar, eliminar) -->
                 <div class="md:hidden mb-6 project-mobile-row">
@@ -136,7 +140,11 @@
                 <h2 id="completed-heading" class="section-title mt-8">Tareas completadas</h2>
                 <ul id="completed" class="task-list" aria-label="Tareas completadas"></ul>
             </div>
+            </div>
         </section>
+
+        <!-- Spacer para centrar tareas en desktop -->
+        <div class="d-none d-lg-block col-lg-3"></div>
 
     </div>
 
@@ -156,8 +164,11 @@
                         ×
                     </button>
                 </div>
-                <button id="project-add-mobile" type="button" class="btn btn-ghost mb-4">
-                    + Proyecto
+                <button id="project-add-mobile" type="button" class="btn btn-ghost mb-4" aria-label="Añadir proyecto" title="Añadir proyecto">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="project-add-icon w-[18px] h-[18px]" aria-hidden="true">
+                        <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm1 5v4h4v2h-4v4h-2v-4H7v-2h4V7h2z"/>
+                    </svg>
+                    <span class="sr-only">Añadir proyecto</span>
                 </button>
                 <ul id="project-list-mobile" class="list-panel overflow-auto" aria-label="Lista de proyectos"></ul>
             </div>
