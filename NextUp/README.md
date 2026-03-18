@@ -13,7 +13,7 @@ Permite crear tareas organizadas por proyectos, buscarlas, marcarlas como comple
 
 - **Gestión de proyectos**:  
   - Crear nuevos proyectos.  
-  - Renombrar proyectos mediante un modal centrado.  
+  - Renombrar proyectos (en la app principal, inline; en el test-runner, por modal para compatibilidad).  
   - Eliminar proyectos (se eliminan también sus tareas asociadas).  
   - Mover tareas entre proyectos mediante drag & drop (escritorio) o modal de selección (móvil).
 
@@ -64,6 +64,13 @@ Permite crear tareas organizadas por proyectos, buscarlas, marcarlas como comple
   - Búsqueda en tiempo real y manejo de la sección de completadas.  
   - Drag & drop: reordenar tareas, mover tareas a proyectos en escritorio y arrastre táctil en móvil/tablet.
   - Gestión del tema (modo claro/oscuro) desde `src/theme.js`.
+
+---
+
+## Notas de refactor (ruido bajo)
+
+- **HTML más limpio, mismo contrato**: `index.html` mantiene los mismos IDs/estructura funcional que espera `src/app.js`, pero se redujo repetición de utilidades visuales.
+- **CSS más determinista**: se evitó CSS inválido (media queries anidadas) para que responsive se comporte igual en todos los navegadores.
 
 ---
 

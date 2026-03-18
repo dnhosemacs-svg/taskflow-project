@@ -16,7 +16,6 @@
 /* Iconos inline: mostrar según data-icon */
 #theme-toggle-icon svg {
   width: 20px;
-  
   height: 20px;
   display: none;
 }

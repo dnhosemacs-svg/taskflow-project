@@ -97,6 +97,8 @@ Centraliza estilos reutilizables y estados:
   - `.task-item[draggable="true"]`, `.task-item.is-dragging` para desktop
   - `.task-floating` + `.task-placeholder` + `html.is-reordering` para arrastre táctil y bloqueo de scroll
   - `.move-btn` se muestra solo en móvil (en desktop se usa drag & drop para mover tareas a proyectos)
+ - Utilidades internas (para reducir “ruido” en HTML):
+   - `.section-head` para encabezados de sección consistentes (título + acción)
 
 ---
 
@@ -139,6 +141,7 @@ Centraliza estilos reutilizables y estados:
 - **La búsqueda filtra el DOM** (no el array): funciona, pero obliga a acordarse de llamar `filterTasks()` tras cambios para mantener consistencia.
 - **`has-popup` se usa de forma parcial**: algunos popups ajustan el fondo “global” y otros solo usan su backdrop; la intención queda mezclada.
 - **`app.js` es un “monolito”**: mezcla estado + persistencia + UI + modales + accesibilidad. Para aprenderlo, ayuda tener un mapa (abajo).
+- **CSS inválido si reaparece**: evita media queries anidadas (no están soportadas en CSS nativo). Se corrigió en `styles/components.css` para que no haya comportamientos “fantasma” según navegador.
 
 ---
 

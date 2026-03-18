@@ -76,3 +76,16 @@ Este archivo documenta, paso a paso, los cambios de refactorización que vamos r
 - **Tema**
   - El botón `#theme-toggle` se movió al `header` y se posiciona a la derecha sin afectar el centrado del título.
 
+## 2026-03-18
+
+- **Reducir “ruido” en `index.html` (sin cambiar el contrato de IDs)**
+  - Se eliminaron comentarios redundantes y bloques de explicación que ya estaban documentados en `ANALISIS_NEXTUP.md`.
+  - Se reemplazaron grupos repetidos de utilidades (flex/alineación/márgenes) por una clase reutilizable nueva: `.section-head`.
+
+- **`styles/components.css`: limpieza y robustez**
+  - Se corrigió un bloque de media queries anidadas (CSS inválido) para que los estilos responsive de `.card-app` sean deterministas.
+  - Se añadió `.section-head` para centralizar layout de encabezados de sección y evitar repetición en HTML.
+
+- **`styles/theme-toggle.css`: micro-limpieza**
+  - Se eliminó un salto de línea sobrante en el bloque de iconos del toggle.
+

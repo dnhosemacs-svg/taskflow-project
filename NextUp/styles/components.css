@@ -136,15 +136,13 @@
   .card-app { padding: 0.75rem; }
 }
 @media (min-width: 768px) {
+  .card-app { padding-top: 1.25rem; }
+}
+@media (max-width: 640px) {
   .card-app {
-    padding-top: 1.25rem;
-  }
-  @media (max-width: 640px) {
-    .card-app {
-      width: 100%;
-      max-width: 100%;
-      padding-inline: 0;
-    }
+    width: 100%;
+    max-width: 100%;
+    padding-inline: 0;
   }
 }
 
@@ -238,6 +236,16 @@
 .ui-row { display: flex; align-items: center; gap: 0.75rem; }
 .stack { display: flex; flex-direction: column; gap: 0.875rem; }
 .justify-end { justify-content: flex-end; }
+
+/* Encabezados de sección (evita repetir utilidades en HTML) */
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.section-head .section-title { margin-bottom: 0; }
 
 .field {
   width: 100%;
