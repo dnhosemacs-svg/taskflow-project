@@ -5,11 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- Hoja de estilos generada/compilada (por ejemplo Tailwind -> output.css) -->
+    <!-- Bootstrap (CDN): CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Tailwind (compilado) + estilos de la app (van después para mantener la estética actual) -->
     <link rel="stylesheet" href="styles/output.css">
-    <!-- Componentes (menos Tailwind en HTML/JS) -->
     <link rel="stylesheet" href="styles/components.css">
-    <!-- Estilos específicos del toggle de tema -->
     <link rel="stylesheet" href="styles/theme-toggle.css">
 
     <!-- Ajustes puntuales de layout (sin depender de Tailwind build) -->
@@ -54,7 +55,7 @@
     <main id="main" class="card-app">
 
     <!-- Layout principal: sidebar izquierda (desktop) + contenedor de tareas -->
-    <div class="app-layout">
+    <div class="app-layout d-flex flex-column flex-md-row align-items-start justify-content-center">
 
         <!-- Contenedor de proyectos (sidebar) -->
         <section class="projects-shell">
@@ -144,7 +145,7 @@
         <div id="project-drawer-backdrop" class="popup-backdrop" aria-hidden="true"></div>
         <div class="popup-center">
             <div id="project-drawer-content" class="popup-panel">
-                <div class="row mb-6 w-full">
+                <div class="ui-row mb-6 w-full">
                     <h2 class="section-title mb-0">Proyectos</h2>
                     <button
                         id="project-drawer-close"
@@ -177,7 +178,7 @@
                         placeholder="Nombre del proyecto..."
                         class="field"
                     >
-                    <div class="row justify-end mt-2">
+                    <div class="ui-row justify-end mt-2">
                         <button id="project-modal-cancel" type="button" class="btn btn-ghost">
                             Cancelar
                         </button>
@@ -199,7 +200,7 @@
                 —
             </div>
             <div id="move-task-modal-list" class="stack modal-options-list"></div>
-            <div id="move-task-modal-actions" class="row justify-end">
+            <div id="move-task-modal-actions" class="ui-row justify-end">
                 <button id="move-task-modal-cancel" type="button" class="btn btn-ghost">
                     Cancelar
                 </button>
@@ -210,7 +211,7 @@
         </div>
     </div>
 
-    <!-- Script principal de la app (tareas, renderizado, eventos, etc.) -->
+    <!-- Scripts de la app -->
     <script src="src/theme.js" defer></script>
     <script src="src/app.js" defer></script>
 </body>

@@ -150,8 +150,6 @@
   max-width: 72rem;
   margin-top: 2.5rem;
   padding-inline: 1.5rem;
-  display: flex;
-  flex-direction: column;
   gap: clamp(1.5rem, 10vw, 12rem);
 }
 @media (max-width: 640px) {
@@ -163,9 +161,7 @@
 }
 @media (min-width: 768px) {
   .app-layout {
-    flex-direction: row;
-    align-items: flex-start;
-    justify-content: center;
+    /* Layout (flex-direction/alineación) lo maneja Bootstrap utilities en el HTML */
   }
 }
 
@@ -239,7 +235,7 @@
   }
 }
 
-.row { display: flex; align-items: center; gap: 0.75rem; }
+.ui-row { display: flex; align-items: center; gap: 0.75rem; }
 .stack { display: flex; flex-direction: column; gap: 0.875rem; }
 .justify-end { justify-content: flex-end; }
 
