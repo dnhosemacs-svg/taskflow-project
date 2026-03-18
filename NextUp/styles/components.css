@@ -151,13 +151,21 @@
   max-width: 72rem;
   margin-top: 2.5rem;
   padding-inline: 1.5rem;
-  gap: clamp(1.5rem, 10vw, 12rem);
+  /*
+    Importante: `.app-layout` también es `.row` de Bootstrap (flex + wrap).
+    Un `gap` grande aquí puede forzar el wrap (tareas debajo de proyectos)
+    dependiendo de zoom/ancho. Usamos los gutters de Bootstrap para el
+    espaciado horizontal y dejamos solo separación vertical.
+  */
+  column-gap: 0;
+  row-gap: 1.25rem;
 }
 @media (max-width: 640px) {
   .app-layout {
     margin-top: 1.5rem;
     padding-inline: 0rem;
-    gap: 1.25rem;
+    column-gap: 0;
+    row-gap: 1.25rem;
   }
 }
 @media (min-width: 768px) {
