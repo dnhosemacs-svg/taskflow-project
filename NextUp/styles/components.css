@@ -361,6 +361,11 @@
   margin-top: 20vh;
 }
 
+/* Confirmación (eliminar proyecto): centrado real */
+#confirm-modal-panel {
+  margin-top: 0;
+}
+
 /* Clases usadas por elementos generados desde app.js */
 .task-item {
   display: flex;

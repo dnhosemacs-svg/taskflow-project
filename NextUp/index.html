@@ -55,7 +55,7 @@
     <main id="main" class="card-app">
 
     <!-- Layout principal (Bootstrap grid): proyectos (3) + tareas (6) centrada -->
-    <div class="app-layout row g-4">
+    <div class="app-layout row g-4 align-items-start">
 
         <!-- Contenedor de proyectos (sidebar) -->
         <section class="projects-shell col-lg-3 d-none d-lg-block">
@@ -74,8 +74,7 @@
         </section>
 
         <!-- Contenedor principal: buscar, añadir y listar tareas -->
-        <section class="col-12 col-lg-6">
-            <div class="card-app">
+        <section class="col-12 col-lg-6 offset-lg-1">
             <div class="tasks-shell">
                 <!-- Barra superior (móvil): dropdown para cambiar proyecto + botón para gestionar (crear, renombrar, eliminar) -->
                 <div class="md:hidden mb-6 project-mobile-row">
@@ -140,11 +139,7 @@
                 <h2 id="completed-heading" class="section-title mt-8">Tareas completadas</h2>
                 <ul id="completed" class="task-list" aria-label="Tareas completadas"></ul>
             </div>
-            </div>
         </section>
-
-        <!-- Spacer para centrar tareas en desktop -->
-        <div class="d-none d-lg-block col-lg-3"></div>
 
     </div>
 
