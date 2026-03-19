@@ -410,6 +410,20 @@ function setupTouchReorder(listEl) {
   listEl.addEventListener('pointercancel', onPointerCancel);
 
   // --- Touch Events fallback ---
+  const onTouchEndWindow = (event) => {
+    if (pointerSession) return;
+    // Si no hay sesión activa, ignorar.
+    if (!touchSession) return;
+    // Si termina el gesto (aunque sea fuera de la lista), persistimos.
+    endTouchDrag(true);
+  };
+
+  const onTouchCancelWindow = () => {
+    if (pointerSession) return;
+    if (!touchSession) return;
+    endTouchDrag(false);
+  };
+
   const onTouchMoveWindow = (event) => {
     // Si Pointer Events está manejando, no intervenir.
     if (pointerSession) return;
@@ -429,6 +443,8 @@ function setupTouchReorder(listEl) {
     finishFloatingDrag(touchSession, { persist });
     touchSession = null;
     window.removeEventListener('touchmove', onTouchMoveWindow, { capture: true });
+    window.removeEventListener('touchend', onTouchEndWindow, { capture: true });
+    window.removeEventListener('touchcancel', onTouchCancelWindow, { capture: true });
     reorderScrollLock.setLocked(false);
   };
 
@@ -479,6 +495,9 @@ function setupTouchReorder(listEl) {
     if (touchSession) {
       // Asegurar que capturamos el movimiento aunque el dedo salga de la lista.
       window.addEventListener('touchmove', onTouchMoveWindow, { passive: false, capture: true });
+      // Y también el "soltar" (touchend) fuera de la lista.
+      window.addEventListener('touchend', onTouchEndWindow, { passive: true, capture: true });
+      window.addEventListener('touchcancel', onTouchCancelWindow, { passive: true, capture: true });
       onTouchMoveWindow(event);
     }
   };
@@ -530,6 +549,8 @@ function setupTouchReorder(listEl) {
       }
 
       window.removeEventListener('touchmove', onTouchMoveWindow, { capture: true });
+      window.removeEventListener('touchend', onTouchEndWindow, { capture: true });
+      window.removeEventListener('touchcancel', onTouchCancelWindow, { capture: true });
       reorderScrollLock.setLocked(false);
 
       listEl.removeEventListener('pointerdown', onPointerDown);
