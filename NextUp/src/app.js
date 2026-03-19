@@ -671,6 +671,105 @@ function getSafeStorage() {
 
 const safeStorage = getSafeStorage();
 
+// --- IndexedDB fallback (persistencia robusta en webviews) ---
+const IDB_DB_NAME = 'nextup_db';
+const IDB_STORE_NAME = 'kv';
+const IDB_VERSION = 1;
+
+/**
+ * @returns {Promise<IDBDatabase|null>}
+ */
+function openNextupIdb() {
+  try {
+    if (!('indexedDB' in window)) return Promise.resolve(null);
+  } catch {
+    return Promise.resolve(null);
+  }
+
+  return new Promise((resolve) => {
+    let req;
+    try {
+      req = window.indexedDB.open(IDB_DB_NAME, IDB_VERSION);
+    } catch {
+      resolve(null);
+      return;
+    }
+
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(IDB_STORE_NAME)) {
+        db.createObjectStore(IDB_STORE_NAME);
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => resolve(null);
+  });
+}
+
+/**
+ * @param {string} key
+ * @returns {Promise<string|null>}
+ */
+async function idbGet(key) {
+  const db = await openNextupIdb();
+  if (!db) return null;
+  return new Promise((resolve) => {
+    const tx = db.transaction(IDB_STORE_NAME, 'readonly');
+    const store = tx.objectStore(IDB_STORE_NAME);
+    const req = store.get(key);
+    req.onsuccess = () => resolve(typeof req.result === 'string' ? req.result : null);
+    req.onerror = () => resolve(null);
+    tx.oncomplete = () => db.close();
+    tx.onerror = () => db.close();
+  });
+}
+
+/**
+ * @param {string} key
+ * @param {string} value
+ * @returns {Promise<void>}
+ */
+async function idbSet(key, value) {
+  const db = await openNextupIdb();
+  if (!db) return;
+  await new Promise((resolve) => {
+    const tx = db.transaction(IDB_STORE_NAME, 'readwrite');
+    const store = tx.objectStore(IDB_STORE_NAME);
+    store.put(value, key);
+    tx.oncomplete = () => resolve(null);
+    tx.onerror = () => resolve(null);
+  });
+  try { db.close(); } catch { /* no-op */ }
+}
+
+/**
+ * Intenta rehidratar estado desde IndexedDB y re-renderiza si encuentra uno válido.
+ * @returns {Promise<void>}
+ */
+async function hydrateStateFromIdbIfNeeded() {
+  // Si ya tenemos estado v2 en storage sincrónico, no hace falta.
+  const storedSync = safeStorage?.getItem(STORAGE_KEY) ?? null;
+  if (storedSync) return;
+
+  const stored = await idbGet(STORAGE_KEY);
+  if (!stored) return;
+
+  try {
+    const parsed = JSON.parse(stored);
+    if (parsed && parsed.schemaVersion === SCHEMA_VERSION) {
+      projects = Array.isArray(parsed.projects) ? parsed.projects : [];
+      tasks = Array.isArray(parsed.tasks) ? parsed.tasks : [];
+      activeProjectId = parsed.ui?.activeProjectId ?? null;
+
+      ensureAtLeastOneProject();
+      renderProjects();
+      setActiveProjectId(activeProjectId);
+    }
+  } catch {
+    // ignore
+  }
+}
+
 // Contador de popups visibles (drawer + modales).
 // Mientras sea > 0 añadimos la clase `has-popup` al <html> para poder
 // ajustar estilos específicos en móvil (por ejemplo, ocultar el botón
@@ -1917,6 +2016,12 @@ function saveState() {
     // Si el storage falla (webview / modo restringido), no rompemos la app.
     // La sesión seguirá funcionando, pero la persistencia no estará garantizada.
   }
+  // Fallback robusto: IndexedDB (mejor soporte en webviews que localStorage).
+  try {
+    void idbSet(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // ignore
+  }
 
   // Mantener sincronizado el almacenamiento legacy que pueden seguir usando
   // algunos tests o entornos antiguos.
@@ -1927,6 +2032,11 @@ function saveState() {
       projectId: t.projectId
     }));
     safeStorage?.setItem(LEGACY_TASKS_KEY, JSON.stringify(legacyTasks));
+    try {
+      void idbSet(LEGACY_TASKS_KEY, JSON.stringify(legacyTasks));
+    } catch {
+      // ignore
+    }
   } catch {
     // Si algo falla (por ejemplo, localStorage no disponible en el entorno
     // de test), no rompemos el flujo principal de guardado.
@@ -2497,4 +2607,7 @@ document.addEventListener('click', (event) => {
 
 renderProjects();
 setActiveProjectId(activeProjectId);
+// Fallback: si el entorno bloquea/volatiliza localStorage, rehidratar desde IndexedDB.
+// (No bloquea el primer render; si encuentra estado, re-renderiza encima.)
+void hydrateStateFromIdbIfNeeded();
 
