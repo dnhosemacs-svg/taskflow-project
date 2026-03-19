@@ -1256,6 +1256,9 @@ taskList.addEventListener('click', function(event) {
 });
 
 // ===== Drag & drop (reordenar pendientes) =====
+/** @type {number|null} */
+let pendingOrderPersistTimer = null;
+
 taskList.addEventListener('dragstart', (event) => {
   const target = event.target;
   if (!(target instanceof Element)) return;
@@ -1295,6 +1298,14 @@ taskList.addEventListener('dragover', (event) => {
   } else if (afterEl !== draggingEl) {
     taskList.insertBefore(draggingEl, afterEl);
   }
+
+  // En móvil algunos navegadores no disparan `drop` al soltar.
+  // Persistimos de forma diferida mientras el usuario reordena.
+  if (pendingOrderPersistTimer !== null) window.clearTimeout(pendingOrderPersistTimer);
+  pendingOrderPersistTimer = window.setTimeout(() => {
+    pendingOrderPersistTimer = null;
+    persistPendingOrderFromDom();
+  }, 140);
 });
 
 taskList.addEventListener('drop', (event) => {
@@ -1304,15 +1315,16 @@ taskList.addEventListener('drop', (event) => {
 });
 
 taskList.addEventListener('dragend', () => {
-  const draggingEl = taskList.querySelector('li.task-item.is-dragging');
-  // En móvil, algunos navegadores no disparan `drop` de forma consistente,
-  // pero sí `dragend`. Persistimos como fallback si el elemento sigue en la lista.
-  if (draggingEl && taskList.contains(draggingEl)) {
-    persistPendingOrderFromDom();
-    draggingEl.classList.remove('is-dragging');
-  } else if (draggingEl) {
-    draggingEl.classList.remove('is-dragging');
+  if (pendingOrderPersistTimer !== null) {
+    window.clearTimeout(pendingOrderPersistTimer);
+    pendingOrderPersistTimer = null;
   }
+
+  const draggingEl = taskList.querySelector('li.task-item.is-dragging');
+  // Fallback final: persistir aunque `drop` no haya disparado.
+  // Si el navegador no añadió clase o no encontramos el nodo, igualmente intentamos.
+  persistPendingOrderFromDom();
+  if (draggingEl) draggingEl.classList.remove('is-dragging');
   draggedTaskId = null;
 });
 
