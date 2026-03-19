@@ -308,6 +308,7 @@ function finishFloatingDrag(session, options) {
  * @returns {{ destroy: () => void }}
  */
 function setupTouchReorder(listEl) {
+  const supportsPointerEvents = typeof window !== 'undefined' && 'PointerEvent' in window;
   /** @type {{ id: string, li: HTMLLIElement, pointerId: number, placeholder: HTMLLIElement, offsetY: number } | null} */
   let pointerSession = null;
   /** @type {number|null} */
@@ -451,6 +452,30 @@ function setupTouchReorder(listEl) {
   listEl.addEventListener('pointercancel', onPointerCancel);
 
   // --- Touch Events fallback ---
+  // Importante:
+  // En muchos Android/webviews (Samsung Internet, Telegram) se disparan *ambos*
+  // (Pointer + Touch). Eso puede iniciar dos "sesiones" de drag que compiten y
+  // termina “volviendo” al orden original al soltar. Por eso, si hay Pointer Events,
+  // desactivamos completamente el fallback de Touch.
+  if (supportsPointerEvents) {
+    return {
+      destroy() {
+        clearPointerTimer();
+        if (pointerSession) {
+          try { finishFloatingDrag(pointerSession, { persist: false }); } catch { /* no-op */ }
+          pointerSession = null;
+        }
+        unbindWindowPointerEnd();
+        reorderScrollLock.setLocked(false);
+
+        listEl.removeEventListener('pointerdown', onPointerDown);
+        listEl.removeEventListener('pointermove', onPointerMove);
+        listEl.removeEventListener('pointerup', onPointerUp);
+        listEl.removeEventListener('pointercancel', onPointerCancel);
+      }
+    };
+  }
+
   const onTouchEndWindow = (event) => {
     if (pointerSession) return;
     // Si no hay sesión activa, ignorar.
