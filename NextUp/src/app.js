@@ -647,6 +647,30 @@ const STORAGE_KEY = 'nextup_state_v2';
 const LEGACY_TASKS_KEY = 'tasks';
 const SCHEMA_VERSION = 2;
 
+/**
+ * Devuelve el storage más fiable disponible.
+ * En algunos webviews (Samsung/Telegram) `localStorage` puede lanzar excepciones
+ * al escribir, lo que impediría persistir el orden.
+ * @returns {Storage|null}
+ */
+function getSafeStorage() {
+  const tryStorage = (s) => {
+    if (!s) return null;
+    try {
+      const k = '__nextup_storage_test__';
+      s.setItem(k, '1');
+      s.removeItem(k);
+      return s;
+    } catch {
+      return null;
+    }
+  };
+
+  return tryStorage(window.localStorage) || tryStorage(window.sessionStorage);
+}
+
+const safeStorage = getSafeStorage();
+
 // Contador de popups visibles (drawer + modales).
 // Mientras sea > 0 añadimos la clase `has-popup` al <html> para poder
 // ajustar estilos específicos en móvil (por ejemplo, ocultar el botón
@@ -1887,7 +1911,12 @@ function saveState() {
     tasks,
     ui: { activeProjectId }
   };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  try {
+    safeStorage?.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // Si el storage falla (webview / modo restringido), no rompemos la app.
+    // La sesión seguirá funcionando, pero la persistencia no estará garantizada.
+  }
 
   // Mantener sincronizado el almacenamiento legacy que pueden seguir usando
   // algunos tests o entornos antiguos.
@@ -1897,7 +1926,7 @@ function saveState() {
       text: t.text,
       projectId: t.projectId
     }));
-    localStorage.setItem(LEGACY_TASKS_KEY, JSON.stringify(legacyTasks));
+    safeStorage?.setItem(LEGACY_TASKS_KEY, JSON.stringify(legacyTasks));
   } catch {
     // Si algo falla (por ejemplo, localStorage no disponible en el entorno
     // de test), no rompemos el flujo principal de guardado.
@@ -1915,7 +1944,7 @@ function clearLegacyIfMigrated() {
 }
 
 function loadState() {
-  const stored = localStorage.getItem(STORAGE_KEY);
+  const stored = safeStorage?.getItem(STORAGE_KEY) ?? null;
   if (stored) {
     try {
       const parsed = JSON.parse(stored);
@@ -1934,7 +1963,7 @@ function loadState() {
   // Antes NextUp guardaba únicamente tareas. Para no perder datos:
   // - creamos un proyecto por defecto
   // - asignamos `projectId` a todas las tareas legacy
-  const legacy = localStorage.getItem(LEGACY_TASKS_KEY);
+  const legacy = safeStorage?.getItem(LEGACY_TASKS_KEY) ?? null;
   const defaultProject = createProject('Mi proyecto');
   projects = [defaultProject];
   activeProjectId = defaultProject.id;
