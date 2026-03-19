@@ -333,7 +333,10 @@ function setupTouchReorder(listEl) {
     touchLongPressTimer = null;
   };
 
-  // --- Pointer Events ---
+  // --- Pointer Events (primario) ---
+  // En Android/webviews (Samsung Internet, Telegram) es común que:
+  // - `pointerType` venga vacío (lo tratamos como táctil, ver `isTouchLikePointer`)
+  // - `pointerup` no vuelva al <ul> (por eso escuchamos también en window)
   const onPointerUpWindow = (event) => {
     if (!event || typeof event !== 'object') return;
     if (!('pointerType' in event)) return;
@@ -451,31 +454,11 @@ function setupTouchReorder(listEl) {
   listEl.addEventListener('pointerup', onPointerUp);
   listEl.addEventListener('pointercancel', onPointerCancel);
 
-  // --- Touch Events fallback ---
-  // Importante:
-  // En muchos Android/webviews (Samsung Internet, Telegram) se disparan *ambos*
-  // (Pointer + Touch). Eso puede iniciar dos "sesiones" de drag que compiten y
-  // termina “volviendo” al orden original al soltar. Por eso, si hay Pointer Events,
-  // desactivamos completamente el fallback de Touch.
-  if (supportsPointerEvents) {
-    return {
-      destroy() {
-        clearPointerTimer();
-        if (pointerSession) {
-          try { finishFloatingDrag(pointerSession, { persist: false }); } catch { /* no-op */ }
-          pointerSession = null;
-        }
-        unbindWindowPointerEnd();
-        reorderScrollLock.setLocked(false);
+  // Si existen Pointer Events, NO registramos el fallback `touch*`.
+  // Evita dobles sesiones (Pointer + Touch) que se pisan y “rebote” al soltar.
+  const enableTouchFallback = !supportsPointerEvents;
 
-        listEl.removeEventListener('pointerdown', onPointerDown);
-        listEl.removeEventListener('pointermove', onPointerMove);
-        listEl.removeEventListener('pointerup', onPointerUp);
-        listEl.removeEventListener('pointercancel', onPointerCancel);
-      }
-    };
-  }
-
+  // --- Touch Events fallback (solo si NO hay Pointer Events) ---
   const onTouchEndWindow = (event) => {
     if (pointerSession) return;
     // Si no hay sesión activa, ignorar.
@@ -540,7 +523,7 @@ function setupTouchReorder(listEl) {
   };
 
   const TOUCHSTART_OPTIONS = /** @type {AddEventListenerOptions} */ ({ passive: true });
-  listEl.addEventListener('touchstart', onTouchStart, TOUCHSTART_OPTIONS);
+  if (enableTouchFallback) listEl.addEventListener('touchstart', onTouchStart, TOUCHSTART_OPTIONS);
 
   const onTouchMove = (event) => {
     if (pointerSession) return;
@@ -569,7 +552,7 @@ function setupTouchReorder(listEl) {
   };
 
   const TOUCHMOVE_OPTIONS = /** @type {AddEventListenerOptions} */ ({ passive: false });
-  listEl.addEventListener('touchmove', onTouchMove, TOUCHMOVE_OPTIONS);
+  if (enableTouchFallback) listEl.addEventListener('touchmove', onTouchMove, TOUCHMOVE_OPTIONS);
 
   const onTouchEnd = () => {
     if (pointerSession) return;
@@ -584,7 +567,7 @@ function setupTouchReorder(listEl) {
   };
 
   const TOUCHEND_OPTIONS = /** @type {AddEventListenerOptions} */ ({ passive: true });
-  listEl.addEventListener('touchend', onTouchEnd, TOUCHEND_OPTIONS);
+  if (enableTouchFallback) listEl.addEventListener('touchend', onTouchEnd, TOUCHEND_OPTIONS);
 
   const onTouchCancel = () => {
     if (pointerSession) return;
@@ -598,7 +581,7 @@ function setupTouchReorder(listEl) {
   };
 
   const TOUCHCANCEL_OPTIONS = /** @type {AddEventListenerOptions} */ ({ passive: true });
-  listEl.addEventListener('touchcancel', onTouchCancel, TOUCHCANCEL_OPTIONS);
+  if (enableTouchFallback) listEl.addEventListener('touchcancel', onTouchCancel, TOUCHCANCEL_OPTIONS);
 
   return {
     destroy() {
@@ -625,10 +608,12 @@ function setupTouchReorder(listEl) {
       listEl.removeEventListener('pointerup', onPointerUp);
       listEl.removeEventListener('pointercancel', onPointerCancel);
 
-      listEl.removeEventListener('touchstart', onTouchStart, TOUCHSTART_OPTIONS);
-      listEl.removeEventListener('touchmove', onTouchMove, TOUCHMOVE_OPTIONS);
-      listEl.removeEventListener('touchend', onTouchEnd, TOUCHEND_OPTIONS);
-      listEl.removeEventListener('touchcancel', onTouchCancel, TOUCHCANCEL_OPTIONS);
+      if (enableTouchFallback) {
+        listEl.removeEventListener('touchstart', onTouchStart, TOUCHSTART_OPTIONS);
+        listEl.removeEventListener('touchmove', onTouchMove, TOUCHMOVE_OPTIONS);
+        listEl.removeEventListener('touchend', onTouchEnd, TOUCHEND_OPTIONS);
+        listEl.removeEventListener('touchcancel', onTouchCancel, TOUCHCANCEL_OPTIONS);
+      }
     }
   };
 }
@@ -673,127 +658,128 @@ const LEGACY_TASKS_KEY = 'tasks';
 const SCHEMA_VERSION = 2;
 
 /**
- * Devuelve el storage más fiable disponible.
- * En algunos webviews (Samsung/Telegram) `localStorage` puede lanzar excepciones
- * al escribir, lo que impediría persistir el orden.
- * @returns {Storage|null}
+ * Persistencia robusta:
+ * - Intenta `localStorage` y luego `sessionStorage` (hay webviews que fallan al escribir).
+ * - Espeja el estado también en IndexedDB (más estable en Samsung/Telegram).
+ *
+ * Nota: se mantiene el formato legacy `tasks` por compatibilidad.
  */
-function getSafeStorage() {
-  const tryStorage = (s) => {
-    if (!s) return null;
+const persistence = (() => {
+  /** @param {Storage} s */
+  const isWritableStorage = (s) => {
     try {
       const k = '__nextup_storage_test__';
       s.setItem(k, '1');
       s.removeItem(k);
-      return s;
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  /** @returns {Storage|null} */
+  const getWritableSyncStorage = () => {
+    try {
+      if (window.localStorage && isWritableStorage(window.localStorage)) return window.localStorage;
+    } catch { /* ignore */ }
+    try {
+      if (window.sessionStorage && isWritableStorage(window.sessionStorage)) return window.sessionStorage;
+    } catch { /* ignore */ }
+    return null;
+  };
+
+  const sync = getWritableSyncStorage();
+
+  const IDB_DB_NAME = 'nextup_db';
+  const IDB_STORE_NAME = 'kv';
+  const IDB_VERSION = 1;
+
+  /** @returns {Promise<IDBDatabase|null>} */
+  const openIdb = () => {
+    try {
+      if (!('indexedDB' in window)) return Promise.resolve(null);
+    } catch {
+      return Promise.resolve(null);
+    }
+
+    return new Promise((resolve) => {
+      let req;
+      try {
+        req = window.indexedDB.open(IDB_DB_NAME, IDB_VERSION);
+      } catch {
+        resolve(null);
+        return;
+      }
+
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(IDB_STORE_NAME)) db.createObjectStore(IDB_STORE_NAME);
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => resolve(null);
+    });
+  };
+
+  /** @param {string} key @returns {Promise<string|null>} */
+  const idbGetString = async (key) => {
+    const db = await openIdb();
+    if (!db) return null;
+    return new Promise((resolve) => {
+      const tx = db.transaction(IDB_STORE_NAME, 'readonly');
+      const store = tx.objectStore(IDB_STORE_NAME);
+      const req = store.get(key);
+      req.onsuccess = () => resolve(typeof req.result === 'string' ? req.result : null);
+      req.onerror = () => resolve(null);
+      tx.oncomplete = () => { try { db.close(); } catch { /* no-op */ } };
+      tx.onerror = () => { try { db.close(); } catch { /* no-op */ } };
+    });
+  };
+
+  /** @param {string} key @param {string} value @returns {Promise<void>} */
+  const idbSetString = async (key, value) => {
+    const db = await openIdb();
+    if (!db) return;
+    await new Promise((resolve) => {
+      const tx = db.transaction(IDB_STORE_NAME, 'readwrite');
+      const store = tx.objectStore(IDB_STORE_NAME);
+      store.put(value, key);
+      tx.oncomplete = () => resolve(null);
+      tx.onerror = () => resolve(null);
+    });
+    try { db.close(); } catch { /* no-op */ }
+  };
+
+  /** @param {string} key @returns {string|null} */
+  const getSync = (key) => {
+    try {
+      return sync?.getItem(key) ?? null;
     } catch {
       return null;
     }
   };
 
-  return tryStorage(window.localStorage) || tryStorage(window.sessionStorage);
-}
-
-const safeStorage = getSafeStorage();
-
-// --- IndexedDB fallback (persistencia robusta en webviews) ---
-const IDB_DB_NAME = 'nextup_db';
-const IDB_STORE_NAME = 'kv';
-const IDB_VERSION = 1;
-
-/**
- * @returns {Promise<IDBDatabase|null>}
- */
-function openNextupIdb() {
-  try {
-    if (!('indexedDB' in window)) return Promise.resolve(null);
-  } catch {
-    return Promise.resolve(null);
-  }
-
-  return new Promise((resolve) => {
-    let req;
+  /** @param {string} key @param {string} value @returns {void} */
+  const setSync = (key, value) => {
     try {
-      req = window.indexedDB.open(IDB_DB_NAME, IDB_VERSION);
+      sync?.setItem(key, value);
     } catch {
-      resolve(null);
-      return;
+      // ignore
     }
+  };
 
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(IDB_STORE_NAME)) {
-        db.createObjectStore(IDB_STORE_NAME);
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => resolve(null);
-  });
-}
+  /** @param {string} key @param {string} value @returns {void} */
+  const setAll = (key, value) => {
+    setSync(key, value);
+    try { void idbSetString(key, value); } catch { /* ignore */ }
+  };
 
-/**
- * @param {string} key
- * @returns {Promise<string|null>}
- */
-async function idbGet(key) {
-  const db = await openNextupIdb();
-  if (!db) return null;
-  return new Promise((resolve) => {
-    const tx = db.transaction(IDB_STORE_NAME, 'readonly');
-    const store = tx.objectStore(IDB_STORE_NAME);
-    const req = store.get(key);
-    req.onsuccess = () => resolve(typeof req.result === 'string' ? req.result : null);
-    req.onerror = () => resolve(null);
-    tx.oncomplete = () => db.close();
-    tx.onerror = () => db.close();
-  });
-}
-
-/**
- * @param {string} key
- * @param {string} value
- * @returns {Promise<void>}
- */
-async function idbSet(key, value) {
-  const db = await openNextupIdb();
-  if (!db) return;
-  await new Promise((resolve) => {
-    const tx = db.transaction(IDB_STORE_NAME, 'readwrite');
-    const store = tx.objectStore(IDB_STORE_NAME);
-    store.put(value, key);
-    tx.oncomplete = () => resolve(null);
-    tx.onerror = () => resolve(null);
-  });
-  try { db.close(); } catch { /* no-op */ }
-}
-
-/**
- * Intenta rehidratar estado desde IndexedDB y re-renderiza si encuentra uno válido.
- * @returns {Promise<void>}
- */
-async function hydrateStateFromIdbIfNeeded() {
-  // Si ya tenemos estado v2 en storage sincrónico, no hace falta.
-  const storedSync = safeStorage?.getItem(STORAGE_KEY) ?? null;
-  if (storedSync) return;
-
-  const stored = await idbGet(STORAGE_KEY);
-  if (!stored) return;
-
-  try {
-    const parsed = JSON.parse(stored);
-    if (parsed && parsed.schemaVersion === SCHEMA_VERSION) {
-      projects = Array.isArray(parsed.projects) ? parsed.projects : [];
-      tasks = Array.isArray(parsed.tasks) ? parsed.tasks : [];
-      activeProjectId = parsed.ui?.activeProjectId ?? null;
-
-      ensureAtLeastOneProject();
-      renderProjects();
-      setActiveProjectId(activeProjectId);
-    }
-  } catch {
-    // ignore
-  }
-}
+  return {
+    getSync,
+    setAll,
+    /** @param {string} key @returns {Promise<string|null>} */
+    async getAsyncFallback(key) { return await idbGetString(key); }
+  };
+})();
 
 // Contador de popups visibles (drawer + modales).
 // Mientras sea > 0 añadimos la clase `has-popup` al <html> para poder
@@ -2036,18 +2022,7 @@ function saveState() {
     tasks,
     ui: { activeProjectId }
   };
-  try {
-    safeStorage?.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    // Si el storage falla (webview / modo restringido), no rompemos la app.
-    // La sesión seguirá funcionando, pero la persistencia no estará garantizada.
-  }
-  // Fallback robusto: IndexedDB (mejor soporte en webviews que localStorage).
-  try {
-    void idbSet(STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    // ignore
-  }
+  persistence.setAll(STORAGE_KEY, JSON.stringify(state));
 
   // Mantener sincronizado el almacenamiento legacy que pueden seguir usando
   // algunos tests o entornos antiguos.
@@ -2057,12 +2032,7 @@ function saveState() {
       text: t.text,
       projectId: t.projectId
     }));
-    safeStorage?.setItem(LEGACY_TASKS_KEY, JSON.stringify(legacyTasks));
-    try {
-      void idbSet(LEGACY_TASKS_KEY, JSON.stringify(legacyTasks));
-    } catch {
-      // ignore
-    }
+    persistence.setAll(LEGACY_TASKS_KEY, JSON.stringify(legacyTasks));
   } catch {
     // Si algo falla (por ejemplo, localStorage no disponible en el entorno
     // de test), no rompemos el flujo principal de guardado.
@@ -2080,7 +2050,7 @@ function clearLegacyIfMigrated() {
 }
 
 function loadState() {
-  const stored = safeStorage?.getItem(STORAGE_KEY) ?? null;
+  const stored = persistence.getSync(STORAGE_KEY);
   if (stored) {
     try {
       const parsed = JSON.parse(stored);
@@ -2099,7 +2069,7 @@ function loadState() {
   // Antes NextUp guardaba únicamente tareas. Para no perder datos:
   // - creamos un proyecto por defecto
   // - asignamos `projectId` a todas las tareas legacy
-  const legacy = safeStorage?.getItem(LEGACY_TASKS_KEY) ?? null;
+  const legacy = persistence.getSync(LEGACY_TASKS_KEY);
   const defaultProject = createProject('Mi proyecto');
   projects = [defaultProject];
   activeProjectId = defaultProject.id;
@@ -2633,7 +2603,24 @@ document.addEventListener('click', (event) => {
 
 renderProjects();
 setActiveProjectId(activeProjectId);
-// Fallback: si el entorno bloquea/volatiliza localStorage, rehidratar desde IndexedDB.
+// Fallback: si el entorno bloquea/volatiliza el storage sincrónico, rehidratar desde IndexedDB.
 // (No bloquea el primer render; si encuentra estado, re-renderiza encima.)
-void hydrateStateFromIdbIfNeeded();
+void (async () => {
+  if (persistence.getSync(STORAGE_KEY)) return;
+  const stored = await persistence.getAsyncFallback(STORAGE_KEY);
+  if (!stored) return;
+  try {
+    const parsed = JSON.parse(stored);
+    if (parsed && parsed.schemaVersion === SCHEMA_VERSION) {
+      projects = Array.isArray(parsed.projects) ? parsed.projects : [];
+      tasks = Array.isArray(parsed.tasks) ? parsed.tasks : [];
+      activeProjectId = parsed.ui?.activeProjectId ?? null;
+      ensureAtLeastOneProject();
+      renderProjects();
+      setActiveProjectId(activeProjectId);
+    }
+  } catch {
+    // ignore
+  }
+})();
 
