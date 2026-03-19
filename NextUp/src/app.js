@@ -1821,9 +1821,10 @@ function getDragAfterElement(container, clientY) {
  * @returns {boolean}
  */
 function isTouchLikePointer(event) {
-  // En iOS Safari a veces pointerType puede venir vacío/undefined en algunos casos raros,
-  // pero si es un PointerEvent, tratamos "pen/touch" como táctil.
-  return event.pointerType === 'touch' || event.pointerType === 'pen';
+  // En algunos Android/webviews (Samsung Internet, Telegram) `pointerType` puede venir vacío.
+  // Consideramos "mouse" como el único NO táctil; el resto (touch/pen/empty) se trata como táctil.
+  const pt = String(event.pointerType ?? '').toLowerCase();
+  return pt !== 'mouse';
 }
 
 /**
