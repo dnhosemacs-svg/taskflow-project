@@ -89,3 +89,16 @@ Este archivo documenta, paso a paso, los cambios de refactorización que vamos r
 - **`styles/theme-toggle.css`: micro-limpieza**
   - Se eliminó un salto de línea sobrante en el bloque de iconos del toggle.
 
+## 2026-03-19
+
+- **Reordenación táctil (Samsung Internet / Telegram webview)**
+  - Se corrigió el “rebote” al soltar: en algunos Android/webviews se disparan Pointer + Touch y podían iniciarse dos sesiones de reorder.
+  - Ahora el reorder táctil usa **Pointer Events como camino primario** y solo activa el fallback `touch*` si no hay soporte de `PointerEvent`.
+  - Se añadió captura del “soltar” a nivel `window` (`pointerup/pointercancel`) para casos donde el evento no vuelve al `<ul>`.
+  - Se relajó `isTouchLikePointer`: trata como táctil todo lo que no sea `mouse` (incluido `pointerType` vacío).
+
+- **Persistencia más robusta (webviews)**
+  - Se creó una capa `persistence` que intenta escribir en `localStorage` y si falla usa `sessionStorage`.
+  - El estado (`nextup_state_v2`) y el legacy (`tasks`) se **espejan también en IndexedDB**.
+  - Al arrancar, si no hay estado en storage sincrónico, se rehidrata desde IndexedDB y se re-renderiza.
+

@@ -42,9 +42,11 @@ Permite crear tareas organizadas por proyectos, buscarlas, marcarlas como comple
   - Incluye un selector para filtrar por estado: **todas / pendientes / completadas**.  
   - Muestra un mensaje de “No hay ninguna tarea con ese nombre” si no hay coincidencias.
 
-- **Persistencia en `localStorage` (estado v2)**:  
-  - Estado versionado que guarda proyectos, tareas y el proyecto activo.  
-  - Migración automática desde el formato antiguo que solo guardaba una lista de tareas simples.
+- **Persistencia (estado v2) con fallback para webviews**:  
+  - Estado versionado (`nextup_state_v2`) que guarda proyectos, tareas y el proyecto activo.  
+  - Se intenta guardar en `localStorage` y, si el entorno lo bloquea, se usa `sessionStorage`.  
+  - Además se espeja el estado en **IndexedDB** para mejorar fiabilidad en navegadores embebidos (p. ej. Samsung Internet / Telegram).  
+  - Migración automática desde el formato antiguo (`tasks`) que solo guardaba una lista de tareas simples.
 
 - **Modo claro / modo oscuro**:  
   - Botón en el **header** (alineado a la derecha) para alternar el tema (claro/oscuro) con texto e icono reactivos.  

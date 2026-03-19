@@ -50,8 +50,11 @@ Aquí está casi todo: datos, persistencia, render y eventos.
 - `activeProjectId`: id del proyecto activo (persistido)
 - `completedTasks`: tareas completadas **solo en memoria** (no persistido)
 
-#### b) Persistencia (localStorage)
+#### b) Persistencia (storage + fallback)
 - Clave principal: `nextup_state_v2` (estado versionado)
+- **Capa `persistence`**:
+  - Intenta persistir en `localStorage` y si falla usa `sessionStorage`.
+  - **Espeja también en IndexedDB** (más estable en webviews como Samsung Internet / Telegram).
 - Compatibilidad: también escribe `tasks` (legacy) para entornos antiguos/tests.
 - `loadState()` además **migra** instalaciones viejas que solo tenían `tasks`:
   - crea un proyecto por defecto
