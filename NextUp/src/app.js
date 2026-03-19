@@ -333,6 +333,42 @@ function setupTouchReorder(listEl) {
   };
 
   // --- Pointer Events ---
+  const onPointerUpWindow = (event) => {
+    if (!event || typeof event !== 'object') return;
+    if (!('pointerType' in event)) return;
+    /** @type {PointerEvent} */
+    const pe = /** @type {any} */ (event);
+    if (!pointerSession) return;
+    if (pointerSession.pointerId !== pe.pointerId) return;
+    pe.preventDefault();
+    finishFloatingDrag(pointerSession, { persist: true });
+    try { pointerSession.li.releasePointerCapture(pe.pointerId); } catch { /* no-op */ }
+    pointerSession = null;
+    reorderScrollLock.setLocked(false);
+  };
+
+  const onPointerCancelWindow = (event) => {
+    if (!event || typeof event !== 'object') return;
+    if (!('pointerType' in event)) return;
+    /** @type {PointerEvent} */
+    const pe = /** @type {any} */ (event);
+    if (!pointerSession) return;
+    if (pointerSession.pointerId !== pe.pointerId) return;
+    finishFloatingDrag(pointerSession, { persist: false });
+    pointerSession = null;
+    reorderScrollLock.setLocked(false);
+  };
+
+  const bindWindowPointerEnd = () => {
+    window.addEventListener('pointerup', onPointerUpWindow, { passive: false, capture: true });
+    window.addEventListener('pointercancel', onPointerCancelWindow, { passive: true, capture: true });
+  };
+
+  const unbindWindowPointerEnd = () => {
+    window.removeEventListener('pointerup', onPointerUpWindow, { capture: true });
+    window.removeEventListener('pointercancel', onPointerCancelWindow, { capture: true });
+  };
+
   const onPointerDown = (event) => {
     if (!event || typeof event !== 'object') return;
     if (!('pointerType' in event)) return;
@@ -353,6 +389,9 @@ function setupTouchReorder(listEl) {
       pointerSession = { id: taskId, li, pointerId: pe.pointerId, placeholder, offsetY };
       reorderScrollLock.setLocked(true);
       try { li.setPointerCapture(pe.pointerId); } catch { /* no-op */ }
+      // En algunos webviews (Samsung/Telegram) el pointerup no vuelve al <ul>.
+      // Capturamos el "soltar" a nivel window mientras dure la sesión.
+      bindWindowPointerEnd();
     }, REORDER_LONG_PRESS_MS);
   };
 
@@ -386,6 +425,7 @@ function setupTouchReorder(listEl) {
     try { pointerSession.li.releasePointerCapture(pe.pointerId); } catch { /* no-op */ }
     pointerSession = null;
     reorderScrollLock.setLocked(false);
+    unbindWindowPointerEnd();
   };
 
   const onPointerCancel = (event) => {
@@ -402,6 +442,7 @@ function setupTouchReorder(listEl) {
     finishFloatingDrag(pointerSession, { persist: false });
     pointerSession = null;
     reorderScrollLock.setLocked(false);
+    unbindWindowPointerEnd();
   };
 
   listEl.addEventListener('pointerdown', onPointerDown);
@@ -548,6 +589,7 @@ function setupTouchReorder(listEl) {
         touchSession = null;
       }
 
+      unbindWindowPointerEnd();
       window.removeEventListener('touchmove', onTouchMoveWindow, { capture: true });
       window.removeEventListener('touchend', onTouchEndWindow, { capture: true });
       window.removeEventListener('touchcancel', onTouchCancelWindow, { capture: true });
